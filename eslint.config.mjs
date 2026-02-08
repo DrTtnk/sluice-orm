@@ -70,4 +70,11 @@ export default tslint.config(
       "custom/aggregate-must-tolist": E,
     },
   },
+  // Disable aggregate-must-tolist for type test files
+  {
+    files: ["test/**/*.test-d.ts"],
+    rules: {
+      "custom/aggregate-must-tolist": "off",
+    },
+  },
 );

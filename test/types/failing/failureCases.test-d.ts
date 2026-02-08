@@ -372,7 +372,7 @@ const invalidSortValue = users
 // ============================================
 
 // After $group, original fields should not be accessible
-// eslint-disable-next-line custom/aggregate-must-tolist
+ 
 const afterGroup = users.aggregate(
   $group($ => ({
     _id: "$role",
@@ -399,7 +399,7 @@ const tryingOriginalFieldAfterGroup = afterGroup
 // ============================================
 
 // After $project with inclusion, excluded fields should not be accessible
-// eslint-disable-next-line custom/aggregate-must-tolist
+ 
 const afterProject = users.aggregate(
   $project($ => ({
     _id: 1,

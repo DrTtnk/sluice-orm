@@ -1,4 +1,4 @@
-/* eslint-disable custom/aggregate-must-tolist */
+ 
 /**
  * Match & Sort type safety regression tests
  *

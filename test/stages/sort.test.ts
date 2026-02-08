@@ -6,6 +6,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ObjectIdSchema } from "../utils/common-schemas.js";
 import { setup, teardown } from "../utils/setup.js";
 
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 const StudentSchema = S.Struct({
   _id: ObjectIdSchema,
   name: S.String,

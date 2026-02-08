@@ -13,11 +13,12 @@
     }
   },
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
     "build:ci": "./scripts/build.sh",
     "release": "./scripts/release.sh",
     "prepublishOnly": "npm run lint && npm run test && npm run build",
-    "test:types": "tsc --noEmit --project tsconfig.test.json && tsd --files 'test/**/*.test-d.ts'",
+    "test:types": "npm run type-check -- --project tsconfig.test.json && tsd --files 'test/**/*.test-d.ts'",
     "test:runtime": "vitest run --config vitest.config.ts",
     "test": "npm-run-all --continue-on-error format test:types test:runtime",
     "lint": "eslint src test --fix",

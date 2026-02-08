@@ -353,6 +353,7 @@ export const collection = <TName extends string, TSchema extends SchemaLike>(
        
       return {
         ...agg,
+        // eslint-disable-next-line custom/aggregate-must-tolist
         toList: () => mongoCol.aggregate(agg.stages as Document[]).toArray(),
         toMQL: () => JSON.stringify(agg.stages, null, 2),
       };

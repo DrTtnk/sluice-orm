@@ -1,4 +1,4 @@
-/* eslint-disable custom/aggregate-must-tolist */
+ 
 /**
  * Type tests for all type safety fixes:
  * 1. $not per-field modeling (not top-level)

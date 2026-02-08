@@ -105,6 +105,7 @@ type PipelineOutput<Mode extends "agg" | "pipeline" | "update" | "migration", TI
  * callable-object UpdateStageFunction for update/migration builders.
  */
 type BStage<TIn, Brand, From, To> =
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   [{}] extends [Brand] ? StageFunction<TIn, From, To> : UpdateStageFunction<From, To>;
 
 /**
