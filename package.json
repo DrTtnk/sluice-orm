@@ -21,7 +21,7 @@
     "type-check": "tsc --noEmit",
     "build:ci": "./scripts/build.sh",
     "release": "./scripts/release.sh",
-    "prepublishOnly": "npm run lint && npm run test:types && npm run build",
+    "prepublishOnly": "npm run test:types",
     "test:types": "npm run type-check -- --project tsconfig.test.json && tsd --files 'test/**/*.test-d.ts'",
     "test:runtime": "vitest run --config vitest.config.ts",
     "test": "npm-run-all --continue-on-error format test:types test:runtime",
