@@ -1,0 +1,11 @@
+printWidth: 100
+singleQuote: false
+semi: true
+tabWidth: 2
+arrowParens: avoid
+bracketSameLine: true
+experimentalTernaries: true
+overrides:
+  - files: "*.mjs"
+    options:
+      parser: "babel"

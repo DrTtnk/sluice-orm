@@ -1,0 +1,9 @@
+node_modules
+battlegrounds
+.vscode
+.idea
+dist
+useful_knowledge.md
+docs/
+trace/
+trace_dir/

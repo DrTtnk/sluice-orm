@@ -1,0 +1,16 @@
+src/
+test/
+docs/
+examples/
+scripts/
+tsconfig.json
+tsconfig.test.json
+tsd.json
+vitest.config.ts
+eslint.config.mjs
+eslint-rules.js
+.gitignore
+.prettierrc.yml
+.github/
+.idea/
+.vscode/
