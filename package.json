@@ -1,5 +1,5 @@
 {
-  "name": "@sluice/sluice",
+  "name": "sluice-orm",
   "version": "0.1.0",
   "description": "A type-safe MongoDB query library where return types are inferred from queries.",
   "author": {
@@ -31,9 +31,6 @@
   "files": [
     "dist"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "keywords": [
     "mongodb",
     "typescript",
@@ -52,12 +49,11 @@
   "bugs": {
     "url": "https://github.com/DrTtnk/sluice-orm/issues"
   },
-  "dependencies": {
-    "mongodb": "^6.18.0"
-  },
+  "dependencies": {},
   "peerDependencies": {
     "effect": "^3.19.14",
     "json-schema-to-typescript": "^10.1.5",
+    "mongodb": "^6.18.0",
     "zod": "^4.0.0"
   },
   "peerDependenciesMeta": {
@@ -71,7 +67,6 @@
   "devDependencies": {
     "@effect/schema": "^0.75.5",
     "@testcontainers/mongodb": "^11.11.0",
-    "@typescript/analyze-trace": "^0.10.1",
     "effect": "^3.19.14",
     "eslint": "^9.33.0",
     "eslint-plugin-simple-import-sort": "^12.1.1",
