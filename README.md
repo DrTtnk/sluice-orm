@@ -1,5 +1,7 @@
 # Sluice ORM
 
+[![CI](https://github.com/DrTtnk/sluice-orm/actions/workflows/ci.yml/badge.svg)](https://github.com/DrTtnk/sluice-orm/actions/workflows/ci.yml)
+
 **Type-safe MongoDB aggregation pipeline builder** where every stage's output type becomes the next stage's input — fully inferred, zero runtime overhead.
 
 ```typescript

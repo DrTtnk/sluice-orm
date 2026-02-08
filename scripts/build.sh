@@ -20,13 +20,18 @@ echo "Running linter..."
 npm run lint
 
 # Build
-echo "Building TypeScript..."
+echo "Building with tsup..."
 npm run build
 
 # Verify build output
 echo "Verifying build output..."
 if [ ! -f "dist/index.js" ]; then
-  echo "Build failed: dist/index.js not found"
+  echo "Build failed: dist/index.js (ESM) not found"
+  exit 1
+fi
+
+if [ ! -f "dist/index.cjs" ]; then
+  echo "Build failed: dist/index.cjs (CJS) not found"
   exit 1
 fi
 
