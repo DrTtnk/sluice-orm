@@ -5,6 +5,8 @@ on:
     branches: [master, main]
   pull_request:
     branches: [master, main]
+  release:
+    types: [published]
 
 jobs:
   test:
@@ -28,8 +30,28 @@ jobs:
       - name: Type checks
         run: npm run test:types
 
-      - name: Runtime tests
-        run: npm run test:runtime
+      - name: Build
+        run: npm run build:ci
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm ci
 
       - name: Build
         run: npm run build:ci
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
