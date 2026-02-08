@@ -26,7 +26,7 @@ const result = await users
 ## Getting Started
 
 ```bash
-npm install @sluice/sluice mongodb
+npm install sluice mongodb
 ```
 
 ### Schema-agnostic — bring your own validation
