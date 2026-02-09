@@ -4,7 +4,7 @@
 
 **Type-safe MongoDB aggregation pipeline builder** where every stage's output type becomes the next stage's input — fully inferred, zero runtime overhead.
 
-📚 **[Full Documentation](https://drttnk.github.io/sluice-orm/)** | 📖 **[Advanced Typings Showcase](./docs-site/docs/advanced-typings.md)**
+📚 **[Full Documentation](https://drttnk.github.io/sluice-orm/)** | 📖 **[Advanced Typings Showcase](https://drttnk.github.io/sluice-orm/docs/advanced-typings)**
 
 ```typescript
 const result = await users
@@ -207,18 +207,18 @@ $project($ => ({
 ## Running Tests
 
 ```bash
-# Full test suite (type checks + runtime tests)
-npm test
+# Type checks only (what CI runs)
+npm run test:types
 
 # Runtime tests only
 npm run test:runtime
 
-# Type checks only
-npm run test:types
+# Full test suite (format + type checks + runtime tests — precommit)
+npm test
 ```
 
 ## Build
 
 ```bash
-npm run build:ci
+npm run build
 ```

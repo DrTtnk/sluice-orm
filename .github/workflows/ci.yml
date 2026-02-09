@@ -9,7 +9,7 @@ on:
     types: [published]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -24,17 +24,14 @@ jobs:
 
       - run: npm ci
 
-      - name: Build types
-        run: npm run build
-
       - name: Type checks
         run: npm run test:types
 
       - name: Build
-        run: npm run build:ci
+        run: npm run build
 
   publish:
-    needs: test
+    needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
     permissions:
