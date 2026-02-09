@@ -57,6 +57,10 @@ const config: Config = {
   themeConfig: {
     // Replace with your project's social card
     image: 'img/sluice-social-card.jpg',
+    colorMode: {
+      defaultMode: 'dark',
+      respectPrefersColorScheme: true,
+    },
     navbar: {
       title: 'Sluice ORM',
       logo: {
