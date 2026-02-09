@@ -24,11 +24,11 @@ jobs:
 
       - run: npm ci
 
-      - name: Type checks
-        run: npm run test:types
-
       - name: Build
         run: npm run build
+
+      - name: Type checks
+        run: npm run test:types
 
   publish:
     needs: build
