@@ -111,28 +111,30 @@ await users.bulkWrite([
 
 ## Effect Support
 
-For teams using [Effect](https://effect.website/), Sluice provides a dedicated `registryEffect` that wraps all operations in `Effect.Effect`.
+For teams using [Effect](https://effect.website/), Sluice provides `registryEffect` with Layer-based dependency injection and tagged errors. **[See full Effect integration docs →](https://drttnk.github.io/sluice-orm/docs/effect-integration)**
 
 ```typescript
 import { Effect } from "effect";
-import { registryEffect } from "sluice-orm";
+import { MongoClient } from "mongodb";
+import { registryEffect, makeMongoDbClientLayer } from "sluice-orm";
 
-const db = registryEffect("8.0", { users: UserSchema })(client.db("myapp"));
+// Create the client and layer
+const client = await MongoClient.connect("mongodb://localhost:27017");
+const mongoLayer = makeMongoDbClientLayer(client.db("myapp"));
 
-// All operations return Effect.Effect<T, Error>
-const findEffect = db.users.find(() => ({ age: { $gte: 18 } })).toOne();
-const user = await Effect.runPromise(findEffect);
-
-// Compose multiple operations
+// Use with Effect.gen — all operations return Effect.Effect<T, MongoError>
 const program = Effect.gen(function* () {
-  yield* db.users.insertOne({ _id: "u1", name: "Alice", age: 30 }).execute();
-  const user = yield* db.users.find(() => ({ _id: "u1" })).toOne();
-  yield* db.users.updateOne(() => ({ _id: "u1" }), { $inc: { age: 1 } }).execute();
-  const updated = yield* db.users.find(() => ({ _id: "u1" })).toOne();
+  const registry = yield* registryEffect("8.0", { users: UserSchema });
+  
+  yield* registry.users.insertOne({ _id: "u1", name: "Alice", age: 30 }).execute();
+  const user = yield* registry.users.find(() => ({ _id: "u1" })).toOne();
+  yield* registry.users.updateOne(() => ({ _id: "u1" }), { $inc: { age: 1 } }).execute();
+  const updated = yield* registry.users.find(() => ({ _id: "u1" })).toOne();
+  
   return { before: user?.age, after: updated?.age };
 });
 
-const result = await Effect.runPromise(program);
+const result = await Effect.runPromise(program.pipe(Effect.provide(mongoLayer)));
 // result: { before: 30, after: 31 }
 ```
 

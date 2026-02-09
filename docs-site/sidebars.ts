@@ -28,6 +28,7 @@ const sidebars: SidebarsConfig = {
     },
     'crud',
     'migration',
+    'effect-integration',
     'advanced-typings',
     'api',
     'examples',
