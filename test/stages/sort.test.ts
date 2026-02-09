@@ -81,13 +81,9 @@ describe("Sort / Limit / Skip Runtime Tests", () => {
   it("should paginate with skip + limit", async () => {
     const coll = dbReg(db).students;
 
-    const page1 = await coll
-      .aggregate($sort({ grade: -1, name: 1 }), $limit(2))
-      .toList();
+    const page1 = await coll.aggregate($sort({ grade: -1, name: 1 }), $limit(2)).toList();
 
-    const page2 = await coll
-      .aggregate($sort({ grade: -1, name: 1 }), $skip(2), $limit(2))
-      .toList();
+    const page2 = await coll.aggregate($sort({ grade: -1, name: 1 }), $skip(2), $limit(2)).toList();
 
     expect(page1).toHaveLength(2);
     expect(page2).toHaveLength(2);

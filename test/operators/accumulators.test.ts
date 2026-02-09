@@ -3,13 +3,7 @@
 // ==========================================
 
 import { Schema as S } from "@effect/schema";
-import {
-  $group,
-  $project,
-  $setWindowFields,
-  $sort,
-  registry,
-} from "@sluice/sluice";
+import { $group, $project, $setWindowFields, $sort, registry } from "@sluice/sluice";
 import { Db, ObjectId } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 

@@ -1,4 +1,3 @@
- 
 /**
  * Type tests for all type safety fixes:
  * 1. $not per-field modeling (not top-level)
@@ -13,14 +12,7 @@ import { ObjectId as _ObjectId } from "bson";
 import type { Db } from "mongodb";
 
 import { update } from "../../../src/crud/updates/stages/index.js";
-import {
-  $group,
-  $match,
-  $replaceRoot,
-  $sort,
-  $unwind,
-  collection,
-} from "../../../src/sluice.js";
+import { $group, $match, $replaceRoot, $sort, $unwind, collection } from "../../../src/sluice.js";
 import type { SimplifyWritable } from "../../../src/type-utils.js";
 
 const ObjectIdSchema = S.instanceOf(_ObjectId);

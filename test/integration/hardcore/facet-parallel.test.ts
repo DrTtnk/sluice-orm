@@ -2,14 +2,7 @@ import { Schema as S } from "@effect/schema";
 import { Db } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import {
-  $facet,
-  $group,
-  $limit,
-  $match,
-  $project,
-  $sort,
-} from "../../../src/sluice.js";
+import { $facet, $group, $limit, $match, $project, $sort } from "../../../src/sluice.js";
 import { ObjectIdSchema } from "../../utils/common-schemas.js";
 import { setup, teardown } from "../../utils/setup.js";
 import { assertSync } from "../../utils/utils.js";

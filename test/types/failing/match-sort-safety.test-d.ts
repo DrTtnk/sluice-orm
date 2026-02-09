@@ -1,4 +1,3 @@
- 
 /**
  * Match & Sort type safety regression tests
  *
@@ -11,12 +10,7 @@
 import { Schema as S } from "@effect/schema";
 import { ObjectId } from "bson";
 
-import {
-  $group,
-  $match,
-  $sort,
-  collection,
-} from "../../../src/sluice.js";
+import { $group, $match, $sort, collection } from "../../../src/sluice.js";
 
 const ObjectIdSchema = S.instanceOf(ObjectId);
 
@@ -67,29 +61,17 @@ col.aggregate(
 // Match: valid usage (should compile)
 // =============================================
 
-col.aggregate(
-  $match(() => ({ age: { $gt: 18 } })),
-);
+col.aggregate($match(() => ({ age: { $gt: 18 } })));
 
-col.aggregate(
-  $match(() => ({ name: { $eq: "Alice" } })),
-);
+col.aggregate($match(() => ({ name: { $eq: "Alice" } })));
 
-col.aggregate(
-  $match(() => ({ createdAt: { $gte: new Date() } })),
-);
+col.aggregate($match(() => ({ createdAt: { $gte: new Date() } })));
 
-col.aggregate(
-  $match(() => ({ active: { $eq: true } })),
-);
+col.aggregate($match(() => ({ active: { $eq: true } })));
 
-col.aggregate(
-  $match(() => ({ age: { $in: [1, 2, 3] } })),
-);
+col.aggregate($match(() => ({ age: { $in: [1, 2, 3] } })));
 
-col.aggregate(
-  $match(() => ({ name: { $regex: /test/i } })),
-);
+col.aggregate($match(() => ({ name: { $regex: /test/i } })));
 
 // =============================================
 // Sort: non-comparable paths rejected

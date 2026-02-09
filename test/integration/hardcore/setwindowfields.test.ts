@@ -7,12 +7,7 @@ import { Db, ObjectId } from "mongodb";
 import { expectType } from "tsd";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import {
-  $project,
-  $setWindowFields,
-  $sort,
-  registry,
-} from "../../../src/sluice.js";
+import { $project, $setWindowFields, $sort, registry } from "../../../src/sluice.js";
 import { ObjectIdSchema } from "../../utils/common-schemas.js";
 import { setup, teardown } from "../../utils/setup.js";
 import { assertSync } from "../../utils/utils.js";

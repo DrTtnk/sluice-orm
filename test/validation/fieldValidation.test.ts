@@ -5,15 +5,7 @@
  * Tests that invalid field references fail at runtime with proper error messages.
  */
 import { Schema as S } from "@effect/schema";
-import {
-  $addFields,
-  $group,
-  $limit,
-  $match,
-  $project,
-  $sort,
-  registry,
-} from "@sluice/sluice";
+import { $addFields, $group, $limit, $match, $project, $sort, registry } from "@sluice/sluice";
 import type { Db } from "mongodb";
 import { ObjectId } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

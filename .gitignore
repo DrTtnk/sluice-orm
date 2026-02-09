@@ -4,6 +4,10 @@ battlegrounds
 .idea
 dist
 useful_knowledge.md
-docs/
+/docs/
 trace/
 trace_dir/
+docs-site/build/
+docs-site/.docusaurus/
+*.log
+__pycache__/

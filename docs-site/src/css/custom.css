@@ -1,0 +1,348 @@
+/* stylelint-disable docusaurus/copyright-header */
+
+/**
+ * Sluice ORM — Custom Theme
+ * Color palette derived from the Sluice logo:
+ *   Primary: Teal/Cyan (#74ede8 → #416768) from logo highlight
+ *   Dark mode backgrounds: #000000, #191b1d, #262b2d from logo
+ *   Accent: Electric violet (type safety contrast)
+ */
+
+:root {
+  /* Primary: Teal — derived from logo palette */
+  --ifm-color-primary: #4a8888;
+  --ifm-color-primary-dark: #416768;
+  --ifm-color-primary-darker: #3a5c5d;
+  --ifm-color-primary-darkest: #2d4647;
+  --ifm-color-primary-light: #50abab;
+  --ifm-color-primary-lighter: #5ccbc9;
+  --ifm-color-primary-lightest: #74ede8;
+
+  /* Secondary: Warm teal variant */
+  --ifm-color-secondary: #3c6e6e;
+  --ifm-color-secondary-dark: #325c5c;
+  --ifm-color-secondary-darker: #2a4e4e;
+  --ifm-color-secondary-darkest: #1f3b3b;
+  --ifm-color-secondary-light: #4a8585;
+  --ifm-color-secondary-lighter: #5a9e9e;
+  --ifm-color-secondary-lightest: #72b8b8;
+
+  /* Accent: Electric violet for type-safety highlights */
+  --ifm-color-accent: #7c3aed;
+  --ifm-color-accent-dark: #6d28d9;
+  --ifm-color-accent-darker: #5b21b6;
+  --ifm-color-accent-darkest: #4c1d95;
+  --ifm-color-accent-light: #8b5cf6;
+  --ifm-color-accent-lighter: #a78bfa;
+  --ifm-color-accent-lightest: #c4b5fd;
+
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(74, 136, 136, 0.1);
+
+  --ifm-color-success: #50abab;
+  --ifm-color-info: #4a8888;
+  --ifm-color-warning: #f59e0b;
+  --ifm-color-danger: #ef4444;
+
+  --ifm-font-family-monospace: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #5ccbc9;
+  --ifm-color-primary-dark: #50abab;
+  --ifm-color-primary-darker: #4a8888;
+  --ifm-color-primary-darkest: #416768;
+  --ifm-color-primary-light: #74ede8;
+  --ifm-color-primary-lighter: #9af3f0;
+  --ifm-color-primary-lightest: #caf9f7;
+
+  --ifm-color-secondary: #4a8585;
+  --ifm-color-secondary-dark: #3c6e6e;
+  --ifm-color-secondary-darker: #325c5c;
+  --ifm-color-secondary-darkest: #2a4e4e;
+  --ifm-color-secondary-light: #5a9e9e;
+  --ifm-color-secondary-lighter: #72b8b8;
+  --ifm-color-secondary-lightest: #8fd0d0;
+
+  --ifm-color-accent: #a78bfa;
+  --ifm-color-accent-dark: #8b5cf6;
+  --ifm-color-accent-darker: #7c3aed;
+  --ifm-color-accent-darkest: #6d28d9;
+  --ifm-color-accent-light: #c4b5fd;
+  --ifm-color-accent-lighter: #ddd6fe;
+  --ifm-color-accent-lightest: #ede9fe;
+
+  --docusaurus-highlighted-code-line-bg: rgba(92, 203, 201, 0.15);
+
+  /* Logo-derived dark backgrounds */
+  --ifm-background-color: #0a0c0d;
+  --ifm-background-surface-color: #191b1d;
+  --ifm-color-emphasis-100: #1e2123;
+  --ifm-color-emphasis-200: #262b2d;
+  --ifm-color-emphasis-300: #303b3d;
+  --ifm-color-emphasis-600: #7a8b8d;
+  --ifm-color-emphasis-700: #b0c4c6;
+}
+
+/* ============================
+   Hero Section
+   ============================ */
+
+.hero--primary {
+  background: linear-gradient(135deg, #000000 0%, #0a0c0d 30%, #262b2d 60%, #3c4c4d 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero--primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(92, 203, 201, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(116, 237, 232, 0.10) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(74, 136, 136, 0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.hero__title {
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  position: relative;
+  z-index: 1;
+}
+
+.hero__subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================
+   Buttons
+   ============================ */
+
+.button--secondary {
+  background: linear-gradient(135deg, var(--ifm-color-primary) 0%, var(--ifm-color-primary-dark) 100%);
+  border: none;
+  box-shadow: 0 4px 14px rgba(74, 136, 136, 0.35);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
+}
+
+.button--secondary:hover {
+  background: linear-gradient(135deg, var(--ifm-color-primary-dark) 0%, var(--ifm-color-primary-darker) 100%);
+  box-shadow: 0 6px 20px rgba(74, 136, 136, 0.45);
+  transform: translateY(-1px);
+  color: white;
+}
+
+.button--outline {
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  background: transparent;
+  color: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button--outline:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  border-color: white;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+/* ============================
+   Code Blocks
+   ============================ */
+
+.theme-code-block {
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-code-block::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--ifm-color-primary) 0%, var(--ifm-color-accent) 50%, var(--ifm-color-secondary) 100%);
+}
+
+[data-theme='dark'] .theme-code-block {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  border-color: var(--ifm-color-emphasis-300);
+}
+
+/* ============================
+   Feature Cards
+   ============================ */
+
+.feature-card {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  background: var(--ifm-background-color);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--ifm-color-primary) 0%, var(--ifm-color-accent) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.feature-card:hover {
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 8px 30px rgba(74, 136, 136, 0.15);
+  transform: translateY(-3px);
+}
+
+.feature-card:hover::before {
+  opacity: 1;
+}
+
+[data-theme='dark'] .feature-card:hover {
+  box-shadow: 0 8px 30px rgba(92, 203, 201, 0.25);
+}
+
+.feature-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+/* ============================
+   Callout Blocks
+   ============================ */
+
+.callout-typesafe {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(13, 148, 136, 0.04) 100%);
+  border-left: 4px solid var(--ifm-color-accent);
+  padding: 1rem 1.5rem;
+  margin: 1rem 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.callout-success {
+  background: linear-gradient(135deg, rgba(80, 171, 171, 0.08) 0%, rgba(65, 103, 104, 0.04) 100%);
+  border-left: 4px solid var(--ifm-color-success);
+  padding: 1rem 1.5rem;
+  margin: 1rem 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.callout-info {
+  background: linear-gradient(135deg, rgba(74, 136, 136, 0.08) 0%, rgba(65, 103, 104, 0.04) 100%);
+  border-left: 4px solid var(--ifm-color-info);
+  padding: 1rem 1.5rem;
+  margin: 1rem 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.callout-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(217, 119, 6, 0.04) 100%);
+  border-left: 4px solid var(--ifm-color-warning);
+  padding: 1rem 1.5rem;
+  margin: 1rem 0;
+  border-radius: 0 8px 8px 0;
+}
+
+/* ============================
+   API Reference
+   ============================ */
+
+.api-method {
+  background: linear-gradient(135deg, rgba(74, 136, 136, 0.03) 0%, rgba(124, 58, 237, 0.03) 100%);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  transition: all 0.3s ease;
+}
+
+.api-method:hover {
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 4px 16px rgba(74, 136, 136, 0.1);
+}
+
+[data-theme='dark'] .api-method:hover {
+  box-shadow: 0 4px 16px rgba(92, 203, 201, 0.15);
+}
+
+.api-signature {
+  font-family: var(--ifm-font-family-monospace);
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--ifm-color-primary) 0%, var(--ifm-color-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+/* ============================
+   Scrollbar & Focus
+   ============================ */
+
+.theme-code-block pre {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ifm-color-emphasis-300) transparent;
+}
+
+.theme-code-block pre::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.theme-code-block pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.theme-code-block pre::-webkit-scrollbar-thumb {
+  background: var(--ifm-color-emphasis-300);
+  border-radius: 3px;
+}
+
+.theme-code-block pre::-webkit-scrollbar-thumb:hover {
+  background: var(--ifm-color-primary);
+}
+
+.button:focus,
+.feature-card:focus {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+}
+
+/* ============================
+   Responsive
+   ============================ */
+
+@media (max-width: 768px) {
+  .hero__title {
+    font-size: 2rem;
+  }
+
+  .feature-card {
+    padding: 1rem;
+    margin: 0.5rem 0;
+  }
+}

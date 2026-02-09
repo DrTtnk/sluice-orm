@@ -61,7 +61,13 @@ export type Geometry =
 // ==========================================
 
 // Re-export Collection types from registry
-export type { BoundCollection, Collection, CollectionType, InferSchema, SchemaLike } from "./registry.js";
+export type {
+  BoundCollection,
+  Collection,
+  CollectionType,
+  InferSchema,
+  SchemaLike,
+} from "./registry.js";
 export { collection, registry } from "./registry.js";
 
 // Type alias for extracting document type from Collection

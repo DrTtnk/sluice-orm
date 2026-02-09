@@ -65,6 +65,16 @@ export type {
 } from "./registry.js";
 export { collection, registry } from "./registry.js";
 
+// --- Effect-based Registry & Collection ---
+export type { BoundCollectionEffect, CrudCollectionEffect } from "./registryEffect.js";
+export {
+  collectionEffect,
+  makeMongoDbClientLayer,
+  MongoDbClient,
+  MongoError,
+  registryEffect,
+} from "./registryEffect.js";
+
 // --- Domain types defined in sluice.ts ---
 export type { ForeignType, Geometry, TimeUnit, WindowSpec } from "./sluice.js";
 

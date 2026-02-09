@@ -1,12 +1,5 @@
 import { Schema as S } from "@effect/schema";
-import {
-  $addFields,
-  $group,
-  $match,
-  $project,
-  $sort,
-  registry,
-} from "@sluice/sluice";
+import { $addFields, $group, $match, $project, $sort, registry } from "@sluice/sluice";
 import type { Db } from "mongodb";
 import { ObjectId } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

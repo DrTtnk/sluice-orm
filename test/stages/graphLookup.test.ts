@@ -1,12 +1,5 @@
 import { Schema as S } from "@effect/schema";
-import {
-  $graphLookup,
-  $lookup,
-  $match,
-  $project,
-  $unwind,
-  registry,
-} from "@sluice/sluice";
+import { $graphLookup, $lookup, $match, $project, $unwind, registry } from "@sluice/sluice";
 import type { Db } from "mongodb";
 import { ObjectId } from "mongodb";
 import { expectType } from "tsd";

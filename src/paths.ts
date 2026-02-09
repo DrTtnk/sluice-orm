@@ -124,7 +124,10 @@ export type BooleanPath<T> = FilteredPath<T, boolean | null | undefined>;
 export type DatePath<T> = FilteredPath<T, Date | null | undefined>;
 export type ArrayPath<T> = FilteredPath<T, readonly unknown[]>;
 export type ObjectPath<T> = FilteredPath<T, Dict<unknown>>;
-export type ComparablePath<T> = FilteredPath<T, number | string | boolean | Date | BSONValue | null | undefined>;
+export type ComparablePath<T> = FilteredPath<
+  T,
+  number | string | boolean | Date | BSONValue | null | undefined
+>;
 
 export type UpdateNumericPath<T> = UpdateFilteredPath<T, number | null | undefined>;
 export type UpdateStringPath<T> = UpdateFilteredPath<T, string | null | undefined>;

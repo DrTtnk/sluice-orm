@@ -13,14 +13,7 @@
  */
 
 import { Schema as S } from "@effect/schema";
-import {
-  $addFields,
-  $group,
-  $match,
-  $project,
-  $unwind,
-  registry,
-} from "@sluice/sluice";
+import { $addFields, $group, $match, $project, $unwind, registry } from "@sluice/sluice";
 import type { Db } from "mongodb";
 import { ObjectId } from "mongodb";
 import { expectType } from "tsd";

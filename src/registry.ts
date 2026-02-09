@@ -40,9 +40,9 @@ import type { Dict, SimplifyWritable } from "./type-utils.js";
  * ```
  */
 export type SchemaLike =
-  | { readonly Type: Dict<unknown> }              // Effect Schema
-  | { readonly _output: Dict<unknown> }           // Zod
-  | { readonly [schemaTypeKey]: Dict<unknown> };   // Custom adapter
+  | { readonly Type: Dict<unknown> } // Effect Schema
+  | { readonly _output: Dict<unknown> } // Zod
+  | { readonly [schemaTypeKey]: Dict<unknown> }; // Custom adapter
 
 declare const schemaTypeKey: unique symbol;
 
@@ -350,7 +350,7 @@ export const collection = <TName extends string, TSchema extends SchemaLike>(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-function-type
         agg = (s as Function)(agg);
       }
-       
+
       return {
         ...agg,
         // eslint-disable-next-line custom/aggregate-must-tolist

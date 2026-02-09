@@ -1,12 +1,6 @@
 // Runtime equivalent of replaceRoot.test-d.ts
 import { Schema as S } from "@effect/schema";
-import {
-  $match,
-  $replaceRoot,
-  $replaceWith,
-  $unwind,
-  registry,
-} from "@sluice/sluice";
+import { $match, $replaceRoot, $replaceWith, $unwind, registry } from "@sluice/sluice";
 import { Db, ObjectId } from "mongodb";
 import { expectType } from "tsd";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
