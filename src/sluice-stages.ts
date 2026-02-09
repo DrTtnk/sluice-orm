@@ -491,14 +491,12 @@ export const $documents = ((documents: __[]) => ({
  * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/facet/ */
 export const $facet = pushStage(pipelines => {
   const facetSpec = resolveStage(pipelines) as Dict<unknown>;
-  const transformedSpec: any = {};
+  const transformedSpec: Dict<unknown> = {};
   for (const [key, val] of Object.entries(facetSpec)) {
-    if ((val as any).stages) {
-      transformedSpec[key] = (val as any).stages;
-    } else if (Array.isArray(val)) {
-      transformedSpec[key] = val;
+    if (val != null && typeof val === "object" && "stages" in val) {
+      transformedSpec[key] = (val as { stages: unknown }).stages;
     } else {
-      transformedSpec[key] = val; // fallback
+      transformedSpec[key] = val;
     }
   }
   return { $facet: transformedSpec };
