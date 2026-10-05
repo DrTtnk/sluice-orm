@@ -97,7 +97,7 @@ const UserSchema = {
 
 ### Optional Properties
 
-- **Runtime validation** - If your schema library supports it, Sluice will use it
+- **Runtime validation** - Invoke your schema library explicitly when handling untrusted data
 - **Custom parsing/serialization** - Schemas can include transformation logic
 
 ## Advanced Schema Patterns
@@ -152,17 +152,21 @@ const UserSchema = S.Struct({
 
 ## Schema Validation
 
-Sluice automatically uses your schema for validation when available:
+Sluice extracts TypeScript document types from schemas. It does **not** automatically
+parse inputs, decode query results, or install database validators. Effect and Zod
+can perform runtime validation when called explicitly in your application.
 
 ```typescript
-const user = { _id: "123", name: "Alice", age: "28" }; // age is string
+// Validate external data before submitting it to Sluice.
+const user = UserSchema.parse(untrustedInput); // Zod example
+await users.insertOne(user).execute();
 
-// With Effect Schema/Zod: Runtime validation catches this
-await users.insertOne(user); // Throws validation error
-
-// With plain types: TypeScript catches this at compile time
-await users.insertOne(user); // TypeScript error: age should be number
+// Plain markers provide compile-time checks only.
+// All writes are builders: awaiting insertOne(...) without .execute() does not write.
 ```
+
+Existing database documents must match the declared schema. Use MongoDB validators
+or application validation if that must also be enforced at runtime.
 
 ## Next Steps
 

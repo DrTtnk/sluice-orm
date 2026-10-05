@@ -151,7 +151,8 @@ export type UpdateObjectPath<T> = UpdateFilteredPath<T, Dict<unknown>>;
  * - Invalid paths (wrong type or doesn't exist) are excluded via `as ... never`
  */
 export type UpdateSpecOfType<T, Target, Value> = {
-  [K in UpdatePathType<T> as ResolveValue<T, K> extends Target ? ValidPositionalPath<K>
+  [K in UpdatePathType<T> as ResolveValue<T, K> extends Target ?
+    Extract<ValidPositionalPath<K>, string>
   : never]?: Value;
 };
 

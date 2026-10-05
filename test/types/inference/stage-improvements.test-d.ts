@@ -112,7 +112,9 @@ void users
       groupBy: "$age",
       // @ts-expect-error boundaries must be increasing
       boundaries: [0, 10, 5],
-      output: $ => ({ count: $.sum(1) }),
+      output: ($: import("../../../src/builder.js").AccumulatorBuilder<User>) => ({
+        count: $.sum(1),
+      }),
     }),
   )
   .toList();

@@ -6,7 +6,7 @@
 
 import type { Simplify, UnionToTuple, ValueOf } from "type-fest";
 
-import type { PathType, ResolvePath, ResolveUpdatePath, UpdatePathType } from "../../paths.js";
+import type { PathType, ResolvePath, ResolveValue, UpdatePathType } from "../../paths.js";
 import type { OpaqueError } from "../../type-errors.js";
 import type { Dict } from "../../type-utils.js";
 import type {
@@ -65,28 +65,30 @@ type ValidateOperatorSpec<Spec, Expected> = {
   [P in keyof Spec]: P extends keyof Expected ? Spec[P] : never;
 };
 
-export type ValidateUpdateSpec<T, Spec extends StrictUpdateSpec<T>> = {
-  [K in keyof Spec]: K extends "$set" ? ValidateOperatorSpec<Spec[K], SetSpec<T>>
-  : K extends "$setOnInsert" ? ValidateOperatorSpec<Spec[K], SetSpec<T>>
-  : K extends "$unset" ? ValidateOperatorSpec<Spec[K], UnsetSpec<T>>
-  : K extends "$inc" ? ValidateOperatorSpec<Spec[K], IncSpec<T>>
-  : K extends "$mul" ? ValidateOperatorSpec<Spec[K], MulSpec<T>>
-  : K extends "$min" ? ValidateOperatorSpec<Spec[K], MinMaxSpec<T>>
-  : K extends "$max" ? ValidateOperatorSpec<Spec[K], MinMaxSpec<T>>
-  : K extends "$rename" ? ValidateOperatorSpec<Spec[K], RenameSpec<T>>
-  : K extends "$currentDate" ? ValidateOperatorSpec<Spec[K], CurrentDateSpec<T>>
-  : K extends "$push" ? ValidateOperatorSpec<Spec[K], PushSpec<T>>
-  : K extends "$addToSet" ? ValidateOperatorSpec<Spec[K], AddToSetSpec<T>>
-  : K extends "$pull" ? ValidateOperatorSpec<Spec[K], PullSpec<T>>
-  : K extends "$pop" ? ValidateOperatorSpec<Spec[K], PopSpec<T>>
-  : K extends "$pullAll" ? ValidateOperatorSpec<Spec[K], PullAllSpec<T>>
-  : K extends "$bit" ? ValidateOperatorSpec<Spec[K], BitSpec<T>>
-  : never;
-} & (ValidatePathConflicts<ExtractPaths<Spec>> extends infer Conflict ?
-  Conflict extends OpaqueError<string> ?
-    Conflict
-  : unknown
-: unknown);
+export type ValidateUpdateSpec<T, Spec extends object> =
+  string extends keyof T ? unknown
+  : {
+      [K in keyof Spec]: K extends "$set" ? ValidateOperatorSpec<Spec[K], SetSpec<T>>
+      : K extends "$setOnInsert" ? ValidateOperatorSpec<Spec[K], SetSpec<T>>
+      : K extends "$unset" ? ValidateOperatorSpec<Spec[K], UnsetSpec<T>>
+      : K extends "$inc" ? ValidateOperatorSpec<Spec[K], IncSpec<T>>
+      : K extends "$mul" ? ValidateOperatorSpec<Spec[K], MulSpec<T>>
+      : K extends "$min" ? ValidateOperatorSpec<Spec[K], MinMaxSpec<T>>
+      : K extends "$max" ? ValidateOperatorSpec<Spec[K], MinMaxSpec<T>>
+      : K extends "$rename" ? ValidateOperatorSpec<Spec[K], RenameSpec<T>>
+      : K extends "$currentDate" ? ValidateOperatorSpec<Spec[K], CurrentDateSpec<T>>
+      : K extends "$push" ? ValidateOperatorSpec<Spec[K], PushSpec<T>>
+      : K extends "$addToSet" ? ValidateOperatorSpec<Spec[K], AddToSetSpec<T>>
+      : K extends "$pull" ? ValidateOperatorSpec<Spec[K], PullSpec<T>>
+      : K extends "$pop" ? ValidateOperatorSpec<Spec[K], PopSpec<T>>
+      : K extends "$pullAll" ? ValidateOperatorSpec<Spec[K], PullAllSpec<T>>
+      : K extends "$bit" ? ValidateOperatorSpec<Spec[K], BitSpec<T>>
+      : never;
+    } & (ValidatePathConflicts<ExtractPaths<Spec>> extends infer Conflict ?
+      Conflict extends OpaqueError<string> ?
+        Conflict
+      : unknown
+    : unknown);
 
 type RecordToTupleType<T extends Dict<any>> = UnionToTuple<ValueOf<{ [K in keyof T]: [K, T[K]] }>>;
 
@@ -177,24 +179,23 @@ type ExtractArrayFilterIdPaths<
 /**
  * Extract all update paths from a StrictUpdateSpec
  */
-type ExtractPathsFromUpdateSpec<T, Spec extends StrictUpdateSpec<T>> = {
+type ExtractPathsFromUpdateSpec<T, Spec extends object> = {
   [K in keyof Spec]: K extends `$${string}` ?
     Spec[K] extends object ?
       keyof Spec[K] & string
     : never
   : never;
-}[keyof Spec] &
-  UpdatePathType<T>;
+}[keyof Spec];
 
 /**
  * Convert ID->Path map to ID->Type map
  * Handles union of paths by merging all ID->Type mappings via UnionToIntersection
  */
-type ArrayFilterTypes<C, P extends UpdatePathType<C>> = Simplify<
+type ArrayFilterTypes<C, P extends string> = Simplify<
   UnionToIntersection<
     P extends infer Path extends string ?
       ExtractArrayFilterIdPaths<Path> extends infer M ?
-        { [Id in keyof M]: ResolveUpdatePath<C, M[Id] & UpdatePathType<C>> }
+        { [Id in keyof M]: ResolveValue<C, M[Id] & string> }
       : never
     : never
   >
@@ -203,7 +204,7 @@ type ArrayFilterTypes<C, P extends UpdatePathType<C>> = Simplify<
 /**
  * Infer array filter types from update spec
  */
-export type InferArrayFilters<T, Spec extends StrictUpdateSpec<T>> = ArrayFilterTypes<
+export type InferArrayFilters<T, Spec extends object> = ArrayFilterTypes<
   T,
   ExtractPathsFromUpdateSpec<T, Spec>
 >;
@@ -211,7 +212,7 @@ export type InferArrayFilters<T, Spec extends StrictUpdateSpec<T>> = ArrayFilter
 /**
  * Required array filters when positional operators are used
  */
-type RequiredArrayFilters<T, Spec extends StrictUpdateSpec<T>> =
+type RequiredArrayFilters<T, Spec extends object> =
   ExtractRequiredIdentifiers<Spec> extends never ? {}
   : {
       arrayFilters: InferArrayFilters<T, Spec> extends infer AF extends Dict<unknown> ?
@@ -226,7 +227,8 @@ type RequiredArrayFilters<T, Spec extends StrictUpdateSpec<T>> =
 /**
  * UpdateOptions - Options for update operations with type-safe arrayFilters
  */
-export type UpdateOptions<T, Spec extends StrictUpdateSpec<T>> = {
+export type UpdateOptions<T, Spec extends object> = {
   upsert?: boolean;
   hint?: string | Dict<1 | -1>;
-} & RequiredArrayFilters<T, Spec>;
+} & (string extends keyof T ? { arrayFilters?: readonly Dict<unknown>[] }
+: RequiredArrayFilters<T, Spec>);

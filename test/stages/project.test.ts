@@ -62,7 +62,7 @@ describe("Project Runtime Tests", () => {
     const result = await coll.aggregate($project($ => ({ name: 1, price: 1 }))).toList();
 
     expect(result.length).toBe(2);
-    expectType<{ name: string; price: number }[]>(result);
+    expectType<{ _id: ObjectId; name: string; price: number }[]>(result);
     expect(result[0]).toHaveProperty("name");
     expect(result[0]).toHaveProperty("price");
   });
@@ -73,7 +73,9 @@ describe("Project Runtime Tests", () => {
     const result = await coll.aggregate($project($ => ({ tags: 0, metadata: 0 }))).toList();
 
     expect(result.length).toBe(2);
-    expectType<{ _id: ObjectId }[]>(result);
+    expectType<{ _id: ObjectId; name: string; price: number; category: string; stock: number }[]>(
+      result,
+    );
     expect(result[0]).not.toHaveProperty("tags");
     expect(result[0]).not.toHaveProperty("metadata");
   });
@@ -92,7 +94,7 @@ describe("Project Runtime Tests", () => {
       .toList();
 
     expect(result).toHaveLength(1);
-    expectType<{ name: string; totalValue: number }[]>(result);
+    expectType<{ _id: ObjectId; name: string; totalValue: number }[]>(result);
     expect(result[0]?.totalValue).toBe(500);
   });
 

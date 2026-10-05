@@ -31,10 +31,15 @@ export type AllPaths<T> = UpdatePathType<T> | ArrayRootPath<T>;
 type ValidPath<T, P extends AllPaths<T>> = P extends string ? ValidPositionalPath<P> : P;
 
 export type SetSpec<T> = {
-  [P in AllPaths<T> as ValidPath<T, P>]?: ValueOrExpr<T, AllowEmptyArray<ResolveValue<T, P>>>;
+  [P in AllPaths<T> as Extract<ValidPath<T, P>, string>]?: ValueOrExpr<
+    T,
+    AllowEmptyArray<ResolveValue<T, P>>
+  >;
 };
 
-export type UnsetSpec<T> = { [P in AllPaths<T> as ValidPath<T, P>]?: "" | 1 | true };
+export type UnsetSpec<T> = {
+  [P in AllPaths<T> as Extract<ValidPath<T, P>, string>]?: "" | 1 | true;
+};
 
 export type IncSpec<T> = UpdateSpecOfType<T, number | Nil, ValueOrExpr<T, number>>;
 export type MulSpec<T> = UpdateSpecOfType<T, number | Nil, ValueOrExpr<T, number>>;

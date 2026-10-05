@@ -183,43 +183,21 @@ describe("Hardcore Pipeline Updates", () => {
     });
   });
 
-  describe("Known pipeline update limitations (by design)", () => {
-    // Pipeline $set is an aggregation stage that can add/overwrite ANY fields.
-    // Unlike traditional $set, it does NOT validate against the document schema.
-    // This is a deliberate design choice matching MongoDB's behavior where pipeline
-    // updates are expression-based and can reshape documents freely.
-
-    it.skip("should reject type mismatches in pipeline", async () => {
+  describe("Schema-preserving pipeline updates", () => {
+    it("should add temporary fields and remove them before the final output", async () => {
       const complexColl = dbRegistry(db).complex;
-      // Pipeline $set allows any value for any key - this is by design
       await complexColl
         .updateOne(
-          $ => ({ _id: "p1" }),
-          $ => $.pipe($.set($ => ({ score: "not a number" }))),
+          () => ({ _id: "p1" }),
+          $ =>
+            $.pipe(
+              $.set($ => ({ extraField: $.add("$score", 1) })),
+              $.unset("extraField"),
+            ),
         )
         .execute();
-    });
-
-    it.skip("should reject invalid field references", async () => {
-      const complexColl = dbRegistry(db).complex;
-      // Pipeline $set accepts "$alsoNonexistent" as a string literal in value position
-      await complexColl
-        .updateOne(
-          $ => ({ _id: "p1" }),
-          $ => $.pipe($.set($ => ({ nonexistent: "$alsoNonexistent" }))),
-        )
-        .execute();
-    });
-
-    it.skip("should enforce schema at pipeline end", async () => {
-      const complexColl = dbRegistry(db).complex;
-      // Pipeline updates allow adding extra fields - MongoDB does not enforce schema
-      await complexColl
-        .updateOne(
-          $ => ({ _id: "p1" }),
-          $ => $.pipe($.set($ => ({ extraField: "value" }))),
-        )
-        .execute();
+      const doc = await complexColl.findOne(() => ({ _id: "p1" })).toOne();
+      expect(doc).not.toHaveProperty("extraField");
     });
   });
 });

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/unified-signatures */
-import { type Decimal128, ObjectId } from "mongodb";
+import { BSON, type Decimal128, type ObjectId } from "mongodb";
 
 import { resolveAccumulator, type TypedAccumulator } from "./accumulator-utils.js";
 import type { PathType } from "./paths.js";
@@ -316,7 +316,8 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
     if (typeof _foo === "function") return this._resolve(_foo(this));
     if (Array.isArray(_foo)) return _foo.map(item => this._resolve(item));
     if (_foo instanceof Date) return _foo;
-    if (_foo instanceof ObjectId) return _foo;
+    if (_foo instanceof BSON.BSONValue) return _foo;
+    if (ArrayBuffer.isView(_foo)) return _foo;
     if (_foo instanceof RegExp) return _foo;
     if (typeof _foo !== "object" || _foo === null) return _foo;
 

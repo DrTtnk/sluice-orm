@@ -8,6 +8,8 @@ import type {
   UpdateResult,
 } from "mongodb";
 
+import type { FindResult, ValidateProjectionOptions } from "./projection-types.js";
+import type { ExecutionMode, OperationResult } from "./execution-types.js";
 import type { UpdatePipelineCallback } from "./crud/updates/stages/index.js";
 import type {
   StrictUpdateSpec as UpdateSpec,
@@ -33,64 +35,77 @@ export type FindOptions<C> = {
   comment?: string;
 };
 
-export type FindBuilder<C> = {
+export type FindBuilder<C, Mode extends ExecutionMode = "promise"> = {
   readonly _filter: CrudFilter<C> | undefined;
   readonly _options: FindOptions<C> | undefined;
-  toList(): Promise<C[]>;
-  toOne(): Promise<C | null>;
+  toList(): OperationResult<C[], Mode>;
+  toOne(): OperationResult<C | null, Mode>;
 };
 
-export type InsertOneBuilder<C> = {
+export type InsertOneBuilder<C, Mode extends ExecutionMode = "promise"> = {
   readonly _doc: C;
-  execute(): Promise<InsertOneResult>;
+  execute(): OperationResult<InsertOneResult, Mode>;
 };
 
-export type InsertManyBuilder<C> = {
+export type InsertManyBuilder<C, Mode extends ExecutionMode = "promise"> = {
   readonly _docs: readonly C[];
-  execute(): Promise<InsertManyResult>;
+  execute(): OperationResult<InsertManyResult, Mode>;
 };
 
-export type UpdateOneBuilder<C extends Document, U extends UpdateSpec<C> = UpdateSpec<C>> = {
+export type UpdateOneBuilder<
+  C extends Document,
+  U extends object = UpdateSpec<C>,
+  Mode extends ExecutionMode = "promise",
+> = {
   readonly _filter: CrudFilter<C>;
   readonly _update: U | (($: ExprBuilder<C>) => U);
   readonly _options: UpdateOpts<C, U> | undefined;
-  execute(): Promise<UpdateResult>;
+  execute(): OperationResult<UpdateResult, Mode>;
 };
 
-export type UpdateManyBuilder<C extends Document, U extends UpdateSpec<C> = UpdateSpec<C>> = {
+export type UpdateManyBuilder<
+  C extends Document,
+  U extends object = UpdateSpec<C>,
+  Mode extends ExecutionMode = "promise",
+> = {
   readonly _filter: CrudFilter<C>;
   readonly _update: U | (($: ExprBuilder<C>) => U);
   readonly _options: UpdateOpts<C, U> | undefined;
-  execute(): Promise<UpdateResult>;
+  execute(): OperationResult<UpdateResult, Mode>;
 };
 
-export type ReplaceBuilder<C> = {
+export type ReplaceBuilder<C, Mode extends ExecutionMode = "promise"> = {
   readonly _filter: CrudFilter<C>;
   readonly _replacement: C;
   readonly _options: unknown;
-  execute(): Promise<UpdateResult>;
+  execute(): OperationResult<UpdateResult, Mode>;
 };
 
-export type DeleteBuilder<C> = {
+export type DeleteBuilder<C, Mode extends ExecutionMode = "promise"> = {
   readonly _filter: CrudFilter<C>;
-  execute(): Promise<DeleteResult>;
+  execute(): OperationResult<DeleteResult, Mode>;
 };
 
-export type FindOneAndDeleteBuilder<C> = {
+export type FindOneAndDeleteBuilder<C, Mode extends ExecutionMode = "promise", Output = C> = {
   readonly _filter: CrudFilter<C>;
-  execute(): Promise<C | null>;
+  execute(): OperationResult<Output | null, Mode>;
 };
 
-export type FindOneAndReplaceBuilder<C> = {
+export type FindOneAndReplaceBuilder<C, Mode extends ExecutionMode = "promise", Output = C> = {
   readonly _filter: CrudFilter<C>;
   readonly _replacement: C;
-  execute(): Promise<C | null>;
+  execute(): OperationResult<Output | null, Mode>;
 };
 
-export type FindOneAndUpdateBuilder<C extends Document, U extends UpdateSpec<C> = UpdateSpec<C>> = {
+export type FindOneAndUpdateBuilder<
+  C extends Document,
+  U extends object = UpdateSpec<C>,
+  Mode extends ExecutionMode = "promise",
+  Output = C,
+> = {
   readonly _filter: CrudFilter<C>;
   readonly _update: U;
-  execute(): Promise<C | null>;
+  execute(): OperationResult<Output | null, Mode>;
 };
 
 export type FindOneAndOptions<C> = {
@@ -113,8 +128,8 @@ export type CountOptions = {
   comment?: string;
 };
 
-export type CountBuilder = {
-  execute(): Promise<number>;
+export type CountBuilder<Mode extends ExecutionMode = "promise"> = {
+  execute(): OperationResult<number, Mode>;
 };
 
 export type BulkWriteOp<C extends Document> =
@@ -153,32 +168,35 @@ export type BulkWriteOp<C extends Document> =
       };
     };
 
-export type BulkWriteBuilder<C extends Document> = {
+export type BulkWriteBuilder<C extends Document, Mode extends ExecutionMode = "promise"> = {
   readonly _operations: readonly BulkWriteOp<C>[];
-  execute(options?: { ordered?: boolean }): Promise<BulkWriteResult>;
+  execute(options?: { ordered?: boolean }): OperationResult<BulkWriteResult, Mode>;
 };
 
-export type DistinctBuilder<T> = {
-  execute(): Promise<T[]>;
+export type DistinctBuilder<T, Mode extends ExecutionMode = "promise"> = {
+  execute(): OperationResult<T[], Mode>;
 };
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-export interface CrudCollection<C extends Document> {
+export interface CrudCollection<C extends Document, Mode extends ExecutionMode = "promise"> {
   find: {
-    (): FindBuilder<C>;
-    <const R extends NoInfer<ValidMatchFilterWithBuilder<C>>>(
+    (): FindBuilder<C, Mode>;
+    <const R extends NoInfer<ValidMatchFilterWithBuilder<C>>, const O extends FindOptions<C> = {}>(
       filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
-      options?: FindOptions<C>,
-    ): FindBuilder<C>;
+      options?: O & ValidateProjectionOptions<O>,
+    ): FindBuilder<FindResult<C, O>, Mode>;
   };
 
-  findOne: <const R extends NoInfer<ValidMatchFilterWithBuilder<C>>>(
+  findOne: <
+    const R extends NoInfer<ValidMatchFilterWithBuilder<C>>,
+    const O extends FindOptions<C> = {},
+  >(
     filter?: ($: ExprBuilder<SimplifyWritable<C>>) => R,
-    options?: FindOptions<C>,
-  ) => FindBuilder<C>;
+    options?: O & ValidateProjectionOptions<O>,
+  ) => FindBuilder<FindResult<C, O>, Mode>;
 
-  insertOne: (doc: C) => InsertOneBuilder<C>;
-  insertMany: (docs: readonly C[]) => InsertManyBuilder<C>;
+  insertOne: (doc: C) => InsertOneBuilder<C, Mode>;
+  insertMany: (docs: readonly C[]) => InsertManyBuilder<C, Mode>;
 
   // Update supports update spec objects or pipeline callbacks
   updateOne: <
@@ -186,18 +204,14 @@ export interface CrudCollection<C extends Document> {
     const Update extends UpdateSpec<C> | UpdatePipelineCallback<C>,
   >(
     filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
-    // @ts-expect-error - Conditional type inference for update spec vs pipeline callback
-    update: Update extends UpdateSpec<C> ? Update & ValidateUpdateSpec<C, Update>
-    : Update extends UpdatePipelineCallback<C> ? Update
-    : never,
+    update: Update extends UpdatePipelineCallback<C> ? Update
+    : Update & ValidateUpdateSpec<C, Update>,
     ...options: NoInfer<
-      Update extends UpdateSpec<C> ?
-        ExtractRequiredIdentifiers<Update> extends never ?
-          [UpdateOpts<C, Update>?]
-        : [UpdateOpts<C, Update>]
-      : []
+      Update extends UpdatePipelineCallback<C> ? []
+      : ExtractRequiredIdentifiers<Update> extends never ? [UpdateOpts<C, Update>?]
+      : [UpdateOpts<C, Update>]
     >
-  ) => UpdateOneBuilder<C, Update extends UpdateSpec<C> ? Update : UpdateSpec<C>>;
+  ) => UpdateOneBuilder<C, Update extends UpdatePipelineCallback<C> ? UpdateSpec<C> : Update, Mode>;
 
   // Update many supports update spec objects or pipeline callbacks
   updateMany: <
@@ -205,73 +219,79 @@ export interface CrudCollection<C extends Document> {
     const Update extends UpdateSpec<C> | UpdatePipelineCallback<C>,
   >(
     filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
-    update: Update extends UpdateSpec<C> ? Update & ValidateUpdateSpec<C, Update>
-    : Update extends UpdatePipelineCallback<C> ? Update
-    : never,
+    update: Update extends UpdatePipelineCallback<C> ? Update
+    : Update & ValidateUpdateSpec<C, Update>,
     ...options: NoInfer<
-      Update extends UpdateSpec<C> ?
-        ExtractRequiredIdentifiers<Update> extends never ?
-          [UpdateOpts<C, Update>?]
-        : [UpdateOpts<C, Update>]
-      : []
+      Update extends UpdatePipelineCallback<C> ? []
+      : ExtractRequiredIdentifiers<Update> extends never ? [UpdateOpts<C, Update>?]
+      : [UpdateOpts<C, Update>]
     >
-  ) => UpdateManyBuilder<C, Update extends UpdateSpec<C> ? Update : UpdateSpec<C>>;
+  ) => UpdateManyBuilder<
+    C,
+    Update extends UpdatePipelineCallback<C> ? UpdateSpec<C> : Update,
+    Mode
+  >;
 
   replaceOne: <const R extends NoInfer<ValidMatchFilterWithBuilder<C>>>(
     filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
     replacement: C,
     options?: unknown,
-  ) => ReplaceBuilder<C>;
+  ) => ReplaceBuilder<C, Mode>;
 
   deleteOne: <const R extends NoInfer<ValidMatchFilterWithBuilder<C>>>(
     filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
-  ) => DeleteBuilder<C>;
+  ) => DeleteBuilder<C, Mode>;
 
   deleteMany: <const R extends NoInfer<ValidMatchFilterWithBuilder<C>>>(
     filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
-  ) => DeleteBuilder<C>;
+  ) => DeleteBuilder<C, Mode>;
 
-  findOneAndDelete: <const R extends NoInfer<ValidMatchFilterWithBuilder<C>>>(
+  findOneAndDelete: <
+    const R extends NoInfer<ValidMatchFilterWithBuilder<C>>,
+    const O extends FindOneAndOptions<C> = {},
+  >(
     filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
-    options?: FindOneAndOptions<C>,
-  ) => FindOneAndDeleteBuilder<C>;
+    options?: O & ValidateProjectionOptions<O>,
+  ) => FindOneAndDeleteBuilder<C, Mode, FindResult<C, O>>;
 
-  findOneAndReplace: <const R extends NoInfer<ValidMatchFilterWithBuilder<C>>>(
+  findOneAndReplace: <
+    const R extends NoInfer<ValidMatchFilterWithBuilder<C>>,
+    const O extends FindOneAndOptions<C> = {},
+  >(
     filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
     replacement: C,
-    options?: FindOneAndOptions<C>,
-  ) => FindOneAndReplaceBuilder<C>;
+    options?: O & ValidateProjectionOptions<O>,
+  ) => FindOneAndReplaceBuilder<C, Mode, FindResult<C, O>>;
 
   findOneAndUpdate: <
     const R extends NoInfer<ValidMatchFilterWithBuilder<C>>,
     const Update extends UpdateSpec<C>,
+    const O extends FindOneAndOptions<C> = {},
   >(
     filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
     update: Update & ValidateUpdateSpec<C, Update>,
-    ...options: NoInfer<
-      ExtractRequiredIdentifiers<Update> extends never ?
-        [(UpdateOpts<C, Update> & FindOneAndOptions<C>)?]
-      : [UpdateOpts<C, Update> & FindOneAndOptions<C>]
-    >
-  ) => FindOneAndUpdateBuilder<C, Update>;
+    ...options: ExtractRequiredIdentifiers<Update> extends never ?
+      [(NoInfer<UpdateOpts<C, Update>> & O & ValidateProjectionOptions<O>)?]
+    : [NoInfer<UpdateOpts<C, Update>> & O & ValidateProjectionOptions<O>]
+  ) => FindOneAndUpdateBuilder<C, Update, Mode, FindResult<C, O>>;
 
   countDocuments: {
-    (): CountBuilder;
+    (): CountBuilder<Mode>;
     <const R extends NoInfer<ValidMatchFilterWithBuilder<C>>>(
       filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
       options?: CountOptions,
-    ): CountBuilder;
+    ): CountBuilder<Mode>;
   };
 
-  estimatedDocumentCount: () => CountBuilder;
+  estimatedDocumentCount: () => CountBuilder<Mode>;
 
   distinct: <K extends keyof C & string>(
     field: K,
     filter?: ($: ExprBuilder<SimplifyWritable<C>>) => ValidMatchFilterWithBuilder<C>,
-  ) => DistinctBuilder<C[K]>;
+  ) => DistinctBuilder<C[K] extends readonly (infer E)[] ? E : C[K], Mode>;
 
   bulkWrite: (
     operations: readonly BulkWriteOp<C>[],
     options?: { ordered?: boolean },
-  ) => BulkWriteBuilder<C>;
+  ) => BulkWriteBuilder<C, Mode>;
 }

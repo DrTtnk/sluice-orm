@@ -2,6 +2,7 @@ import type { Collection } from "mongodb";
 import type * as tf from "type-fest";
 
 import type { OpaqueError } from "./type-errors.js";
+import type { ExecutionMode, OperationResult } from "./execution-types.js";
 import type { SimplifyWritable } from "./type-utils.js";
 
 /**
@@ -29,12 +30,14 @@ type CheckedResult<T> =
 /**
  * Core Agg type - represents a pipeline at a point with input and current document types
  */
-export type Agg<TIn, TCurrent> = {
+export type Agg<TIn, TCurrent, Execution extends ExecutionMode = "promise"> = {
   readonly _in: TIn;
   readonly _current: SimplifyWritable<TCurrent>;
   readonly stages: readonly object[];
-  pipe<TOut>(stage: (agg: Agg<TIn, TCurrent>) => Agg<TIn, TOut>): Agg<TIn, TOut>;
-  toList(collection?: Collection): Promise<SimplifyWritable<CheckedResult<TCurrent>>[]>;
+  pipe<TOut>(stage: (agg: Agg<TIn, TCurrent>) => Agg<TIn, TOut>): Agg<TIn, TOut, Execution>;
+  toList(
+    collection?: Collection,
+  ): OperationResult<SimplifyWritable<CheckedResult<TCurrent>>[], Execution>;
   /** Returns the accumulated pipeline stages as formatted JSON */
   toMQL(): string;
 };
@@ -89,16 +92,21 @@ export type UpdateStageFunction<TFrom, TTo> = {
  * - "update": validates Last extends Target, wraps in CheckedResult
  * - "migration": validates Simplify<Last> extends Target
  */
-type PipelineOutput<Mode extends "agg" | "pipeline" | "update" | "migration", TIn, Last, Target> =
-  Mode extends "agg" ? Agg<TIn, Last>
+type PipelineOutput<
+  Mode extends "agg" | "pipeline" | "update" | "migration",
+  TIn,
+  Last,
+  Target,
+  Execution extends ExecutionMode,
+> =
+  Mode extends "agg" ? Agg<TIn, Last, Execution>
   : Mode extends "pipeline" ? TypedPipeline<TIn, Last>
   : Mode extends "update" ?
     Last extends Target ?
       TypedPipeline<TIn, CheckedResult<Last>>
-    : OpaqueError<"Update pipeline output must be assignable to collection type"> &
-        TypedPipeline<TIn, Last>
+    : OpaqueError<"Update pipeline output must be assignable to collection type">
   : tf.Simplify<Last> extends Target ? TypedPipeline<TIn, Last>
-  : OpaqueError<"Migration output does not match target schema"> & TypedPipeline<TIn, Last>;
+  : OpaqueError<"Migration output does not match target schema">;
 
 /**
  * Branded stage: bare StageFunction for standard builders,
@@ -117,26 +125,27 @@ type GenericPipelineBuilder<
   Brand,
   Mode extends "agg" | "pipeline" | "update" | "migration",
   Target = unknown,
+  Execution extends ExecutionMode = "promise",
 > = {
-  <A>(s1: BStage<TIn, Brand, TIn, A>): PipelineOutput<Mode, TIn, A, Target>;
+  <A>(s1: BStage<TIn, Brand, TIn, A>): PipelineOutput<Mode, TIn, A, Target, Execution>;
 
   <A, B>(
     s1: BStage<TIn, Brand, TIn, A>,
     s2: BStage<TIn, Brand, A, B>,
-  ): PipelineOutput<Mode, TIn, B, Target>;
+  ): PipelineOutput<Mode, TIn, B, Target, Execution>;
 
   <A, B, C>(
     s1: BStage<TIn, Brand, TIn, A>,
     s2: BStage<TIn, Brand, A, B>,
     s3: BStage<TIn, Brand, B, C>,
-  ): PipelineOutput<Mode, TIn, C, Target>;
+  ): PipelineOutput<Mode, TIn, C, Target, Execution>;
 
   <A, B, C, D>(
     s1: BStage<TIn, Brand, TIn, A>,
     s2: BStage<TIn, Brand, A, B>,
     s3: BStage<TIn, Brand, B, C>,
     s4: BStage<TIn, Brand, C, D>,
-  ): PipelineOutput<Mode, TIn, D, Target>;
+  ): PipelineOutput<Mode, TIn, D, Target, Execution>;
 
   <A, B, C, D, E>(
     s1: BStage<TIn, Brand, TIn, A>,
@@ -144,7 +153,7 @@ type GenericPipelineBuilder<
     s3: BStage<TIn, Brand, B, C>,
     s4: BStage<TIn, Brand, C, D>,
     s5: BStage<TIn, Brand, D, E>,
-  ): PipelineOutput<Mode, TIn, E, Target>;
+  ): PipelineOutput<Mode, TIn, E, Target, Execution>;
 
   <A, B, C, D, E, F>(
     s1: BStage<TIn, Brand, TIn, A>,
@@ -153,7 +162,7 @@ type GenericPipelineBuilder<
     s4: BStage<TIn, Brand, C, D>,
     s5: BStage<TIn, Brand, D, E>,
     s6: BStage<TIn, Brand, E, F>,
-  ): PipelineOutput<Mode, TIn, F, Target>;
+  ): PipelineOutput<Mode, TIn, F, Target, Execution>;
 
   <A, B, C, D, E, F, G>(
     s1: BStage<TIn, Brand, TIn, A>,
@@ -163,7 +172,7 @@ type GenericPipelineBuilder<
     s5: BStage<TIn, Brand, D, E>,
     s6: BStage<TIn, Brand, E, F>,
     s7: BStage<TIn, Brand, F, G>,
-  ): PipelineOutput<Mode, TIn, G, Target>;
+  ): PipelineOutput<Mode, TIn, G, Target, Execution>;
 
   <A, B, C, D, E, F, G, H>(
     s1: BStage<TIn, Brand, TIn, A>,
@@ -174,7 +183,7 @@ type GenericPipelineBuilder<
     s6: BStage<TIn, Brand, E, F>,
     s7: BStage<TIn, Brand, F, G>,
     s8: BStage<TIn, Brand, G, H>,
-  ): PipelineOutput<Mode, TIn, H, Target>;
+  ): PipelineOutput<Mode, TIn, H, Target, Execution>;
 
   <A, B, C, D, E, F, G, H, I>(
     s1: BStage<TIn, Brand, TIn, A>,
@@ -186,7 +195,7 @@ type GenericPipelineBuilder<
     s7: BStage<TIn, Brand, F, G>,
     s8: BStage<TIn, Brand, G, H>,
     s9: BStage<TIn, Brand, H, I>,
-  ): PipelineOutput<Mode, TIn, I, Target>;
+  ): PipelineOutput<Mode, TIn, I, Target, Execution>;
 
   <A, B, C, D, E, F, G, H, I, J>(
     s1: BStage<TIn, Brand, TIn, A>,
@@ -199,7 +208,7 @@ type GenericPipelineBuilder<
     s8: BStage<TIn, Brand, G, H>,
     s9: BStage<TIn, Brand, H, I>,
     s10: BStage<TIn, Brand, I, J>,
-  ): PipelineOutput<Mode, TIn, J, Target>;
+  ): PipelineOutput<Mode, TIn, J, Target, Execution>;
 
   <A, B, C, D, E, F, G, H, I, J, K>(
     s1: BStage<TIn, Brand, TIn, A>,
@@ -213,7 +222,7 @@ type GenericPipelineBuilder<
     s9: BStage<TIn, Brand, H, I>,
     s10: BStage<TIn, Brand, I, J>,
     s11: BStage<TIn, Brand, J, K>,
-  ): PipelineOutput<Mode, TIn, K, Target>;
+  ): PipelineOutput<Mode, TIn, K, Target, Execution>;
 
   <A, B, C, D, E, F, G, H, I, J, K, L>(
     s1: BStage<TIn, Brand, TIn, A>,
@@ -228,7 +237,7 @@ type GenericPipelineBuilder<
     s10: BStage<TIn, Brand, I, J>,
     s11: BStage<TIn, Brand, J, K>,
     s12: BStage<TIn, Brand, K, L>,
-  ): PipelineOutput<Mode, TIn, L, Target>;
+  ): PipelineOutput<Mode, TIn, L, Target, Execution>;
 
   <A, B, C, D, E, F, G, H, I, J, K, L, M>(
     s1: BStage<TIn, Brand, TIn, A>,
@@ -244,7 +253,7 @@ type GenericPipelineBuilder<
     s11: BStage<TIn, Brand, J, K>,
     s12: BStage<TIn, Brand, K, L>,
     s13: BStage<TIn, Brand, L, M>,
-  ): PipelineOutput<Mode, TIn, M, Target>;
+  ): PipelineOutput<Mode, TIn, M, Target, Execution>;
 
   <A, B, C, D, E, F, G, H, I, J, K, L, M, N>(
     s1: BStage<TIn, Brand, TIn, A>,
@@ -261,7 +270,7 @@ type GenericPipelineBuilder<
     s12: BStage<TIn, Brand, K, L>,
     s13: BStage<TIn, Brand, L, M>,
     s14: BStage<TIn, Brand, M, N>,
-  ): PipelineOutput<Mode, TIn, N, Target>;
+  ): PipelineOutput<Mode, TIn, N, Target, Execution>;
 
   <A, B, C, D, E, F, G, H, I, J, K, L, M, N, O>(
     s1: BStage<TIn, Brand, TIn, A>,
@@ -279,7 +288,7 @@ type GenericPipelineBuilder<
     s13: BStage<TIn, Brand, L, M>,
     s14: BStage<TIn, Brand, M, N>,
     s15: BStage<TIn, Brand, N, O>,
-  ): PipelineOutput<Mode, TIn, O, Target>;
+  ): PipelineOutput<Mode, TIn, O, Target, Execution>;
 };
 
 // ==========================================
@@ -292,7 +301,10 @@ export type PipelineBuilder<TIn> = GenericPipelineBuilder<TIn, {}, "pipeline">;
 
 /** For collection.aggregate() — returns Agg instead of TypedPipeline */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export type AggregateBuilder<T> = GenericPipelineBuilder<T, {}, "agg">;
+export type AggregateBuilder<
+  T,
+  Execution extends ExecutionMode = "promise",
+> = GenericPipelineBuilder<T, {}, "agg", unknown, Execution>;
 
 /** For update pipelines — only UpdateStageBrand stages, validates output extends C */
 export type UpdatePipelineBuilder<C> = GenericPipelineBuilder<C, UpdateStageBrand, "update", C>;

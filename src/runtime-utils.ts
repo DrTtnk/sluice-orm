@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb";
+import { BSON } from "mongodb";
 
 import { ExprBuilder, Ret, type RuntimeValue } from "./builder.js";
 import type { Dict } from "./type-utils.js";
@@ -12,7 +12,8 @@ export const unwrapRet = (value: unknown): unknown => {
   if (_foo instanceof Ret) return unwrapRet(_foo.__fn);
   if (Array.isArray(_foo)) return _foo.map(unwrapRet);
   if (_foo instanceof Date) return _foo;
-  if (_foo instanceof ObjectId) return _foo;
+  if (_foo instanceof BSON.BSONValue) return _foo;
+  if (ArrayBuffer.isView(_foo)) return _foo;
   if (_foo instanceof RegExp) return _foo;
   if (typeof _foo !== "object" || _foo === null) return _foo;
 

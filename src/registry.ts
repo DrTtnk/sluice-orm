@@ -17,6 +17,7 @@ import type {
 
 import type { CrudCollection, FindOptions } from "./crud.js";
 import { update } from "./crud/updates/stages/index.js";
+import { resolveStage } from "./runtime-utils.js";
 import type { AggregateBuilder } from "./pipeline-types.js";
 import type { Dict, SimplifyWritable } from "./type-utils.js";
 
@@ -88,7 +89,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
   const extractFilter = (filterFn: unknown): Filter<T> => {
     if (!filterFn) return {} as Filter<T>;
     // The callback returns a MongoDB filter document directly
-    return (filterFn as ($: unknown) => unknown)({}) as Filter<T>;
+    return resolveStage(filterFn) as Filter<T>;
   };
 
   return {
@@ -351,12 +352,13 @@ export const collection = <TName extends string, TSchema extends SchemaLike>(
         agg = (s as Function)(agg);
       }
 
-      return {
-        ...agg,
-        // eslint-disable-next-line custom/aggregate-must-tolist
-        toList: () => mongoCol.aggregate(agg.stages as Document[]).toArray(),
-        toMQL: () => JSON.stringify(agg.stages, null, 2),
-      };
+      const bindPipeline = (pipeline: typeof agg): object => ({
+        ...pipeline,
+        pipe: (stage: (input: typeof agg) => typeof agg) => bindPipeline(stage(pipeline)),
+        toList: () => mongoCol.aggregate(pipeline.stages as Document[]).toArray(),
+        toMQL: () => JSON.stringify(pipeline.stages, null, 2),
+      });
+      return bindPipeline(agg);
     }) as unknown as AggregateBuilder<SimplifyWritable<InferSchema<TSchema>>>,
     ...crud,
   });

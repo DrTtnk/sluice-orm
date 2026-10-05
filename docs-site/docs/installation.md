@@ -6,15 +6,18 @@ sidebar_position: 2
 
 ## Prerequisites
 
-- **Node.js 18+**
-- **TypeScript 5.0+**
+- **Node.js 20+**
+- **TypeScript 5.9+** for consumers; native **TypeScript 7.0.2** for repository builds
 - **MongoDB 4.0+** (for MongoDB 8.0 features, use version 8.0+)
 
 ## Install Sluice
 
 ```bash
-npm install sluice-orm mongodb
+npm install sluice-orm mongodb effect
 ```
+
+For TypeScript consumers, install `@types/node` and include `"node"` in
+`compilerOptions.types` when your compiler configuration restricts ambient types.
 
 ## Optional Dependencies
 
@@ -24,7 +27,7 @@ Sluice is **schema-agnostic** - you can use any validation library or plain Type
 
 ```bash
 # Effect Schema (recommended)
-npm install @effect/schema
+npm install effect
 
 # Or Zod
 npm install zod
@@ -45,16 +48,14 @@ npm install effect
 
 Sluice has minimal peer dependencies:
 
-- **mongodb**: `^6.0.0` - MongoDB driver
-- **effect**: `^3.0.0` - Only if using Effect integration
+- **mongodb**: `^6.18.0` - MongoDB driver
+- **effect**: `^3.19.14` - Required by the current shared entry point, including Promise-only usage
 
 ## Development Dependencies
 
-For development and testing:
-
-```bash
-npm install --save-dev typescript @types/node vitest
-```
+For repository development, use `npm ci`. The lockfile installs native TypeScript 7
+for builds and a TypeScript 6 API compatibility alias for ESLint. Public declaration
+dependencies are installed for consumers too.
 
 ## Next Steps
 

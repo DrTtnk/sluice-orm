@@ -66,19 +66,17 @@ type ProjectSpec<C> =
   | ({ [K in keyof C & string]?: 0 } & { _id?: 0 | 1 } & Dict<ExpressionIn<C> | Ret<C>>)
   | (Dict<ExpressionIn<C> | Ret<C>> & { _id?: 0 | 1 });
 
-type HasKey<Spec, K, V> = { [P in keyof Spec]: Spec[P] extends V ? true : false }[keyof Spec];
-type OnlyIdMixed<Spec> =
-  HasKey<Spec, any, 1> extends true ?
-    HasKey<Spec, any, 0> extends true ?
-      keyof Spec & string extends "_id" | `_${string}` ?
-        true
-      : false
-    : true
-  : true;
+type KeysWithValue<Spec, V> = {
+  [K in keyof Spec]: Spec[K] extends V ? K : never;
+}[keyof Spec];
 
 type ValidateProjectRules<Spec> =
-  OnlyIdMixed<Spec> extends true ? Spec
-  : CallbackOnlyError<"$project cannot mix inclusion (1) and exclusion (0) except for _id">;
+  Exclude<KeysWithValue<Spec, 0>, "_id"> extends never ? Spec
+  : Exclude<keyof Spec, KeysWithValue<Spec, 0> | Extract<KeysWithValue<Spec, 1>, "_id">> extends (
+    never
+  ) ?
+    Spec
+  : CallbackOnlyError<"$project cannot mix exclusion (0) with inclusion or computed fields except for _id">;
 
 type ProjectIdResult<C, Spec> =
   Spec extends { _id: 0 } ? {}
@@ -86,19 +84,24 @@ type ProjectIdResult<C, Spec> =
     C extends { _id: infer Id } ?
       { _id: Id }
     : OpaqueError<"$project field does not exist: _id">
+  : Spec extends { _id: infer Id } ? { _id: ResolveType<C, Id> }
   : C extends { _id: infer Id } ? { _id: Id }
   : {};
 
-type ProjectResult<C, Spec> = Simplify<
-  ProjectIdResult<C, Spec> & {
-    [K in Exclude<keyof Spec, "_id">]: Spec[K] extends 1 ?
-      K extends keyof C ?
-        C[K]
-      : OpaqueError<`$project field does not exist: ${K & string}`>
-    : Spec[K] extends 0 ? never
-    : ResolveType<C, Spec[K]>;
-  }
->;
+type ProjectResult<C, Spec> =
+  Exclude<keyof Spec, KeysWithValue<Spec, 0>> extends never ? Omit<C, KeysWithValue<Spec, 0>>
+  : Exclude<KeysWithValue<Spec, 0>, "_id"> extends never ?
+    Simplify<
+      ProjectIdResult<C, Spec> & {
+        [K in Exclude<keyof Spec, "_id">]: Spec[K] extends 1 ?
+          K extends keyof C ?
+            C[K]
+          : OpaqueError<`$project field does not exist: ${K & string}`>
+        : Spec[K] extends 0 ? never
+        : ResolveType<C, Spec[K]>;
+      }
+    >
+  : Omit<C, KeysWithValue<Spec, 0>>;
 
 // ==========================================
 // Window Function Types
@@ -325,7 +328,7 @@ export const $addFields = pushStage(fieldsBuilder => ({
   $addFields: resolveStage(fieldsBuilder),
 })) as unknown as <C, const T>(
   fieldsBuilder: ($: ExprBuilder<Simplify<C>>) => T,
-) => UpdateStageFunction<C, Simplify<C & ResolveSpec<C, T>>>;
+) => UpdateStageFunction<C, Simplify<Omit<C, keyof T> & ResolveSpec<C, T>>>;
 
 /** Groups documents into discrete buckets by a specified expression and boundaries.
  * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/bucket/ */
@@ -803,10 +806,10 @@ export const $sample = pushStage(options => ({ $sample: resolveStage(options) })
 export const $set = pushStage(fields => ({ $set: resolveStage(fields) })) as unknown as {
   <C, const T extends Dict<ExpressionIn<C> | Ret<C>>>(
     fields: NoInfer<T>,
-  ): UpdateStageFunction<C, Simplify<C & { [K in keyof T]: ResolveType<C, T[K]> }>>;
+  ): UpdateStageFunction<C, Simplify<Omit<C, keyof T> & { [K in keyof T]: ResolveType<C, T[K]> }>>;
   <C, const T extends Dict<ExpressionIn<Simplify<C>> | Ret<Simplify<C>>>>(
     fields: ($: ExprBuilder<Simplify<C>>) => T,
-  ): UpdateStageFunction<C, Simplify<C & { [K in keyof T]: ResolveType<C, T[K]> }>>;
+  ): UpdateStageFunction<C, Simplify<Omit<C, keyof T> & { [K in keyof T]: ResolveType<C, T[K]> }>>;
 };
 
 /** Performs window function calculations across a specified span of documents.

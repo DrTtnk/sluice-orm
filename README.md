@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/DrTtnk/sluice-orm/actions/workflows/ci.yml/badge.svg)](https://github.com/DrTtnk/sluice-orm/actions/workflows/ci.yml)
 
-**Type-safe MongoDB aggregation pipeline builder** where every stage's output type becomes the next stage's input — fully inferred, zero runtime overhead.
+**Type-safe MongoDB aggregation pipeline builder** where every stage's output type becomes the next stage's input — fully inferred, with no runtime type checking.
 
 📚 **[Full Documentation](https://drttnk.github.io/sluice-orm/)** | 📖 **[Advanced Typings Showcase](https://drttnk.github.io/sluice-orm/docs/advanced-typings)**
 
@@ -28,7 +28,7 @@ const result = await users
 ## Getting Started
 
 ```bash
-npm install sluice mongodb
+npm install sluice-orm mongodb effect
 ```
 
 ### Schema-agnostic — bring your own validation
@@ -51,7 +51,7 @@ const UserSchema = { Type: null! as { _id: string; name: string; age: number } }
 ### Create a registry
 
 ```typescript
-import { registry, $match, $group, $sort, $project } from "@sluice/sluice";
+import { registry, $match, $group, $sort, $project } from "sluice-orm";
 
 const db = registry("8.0", {
   users: UserSchema,
@@ -98,13 +98,13 @@ const adults = await users
 await users.updateOne(
   () => ({ _id: "user-1" }),
   { $set: { name: "Alice" }, $inc: { age: 1 } },
-);
+).execute();
 
 // Type-safe bulk operations
 await users.bulkWrite([
   { insertOne: { document: { _id: "u1", name: "Bob", age: 30 } } },
   { updateOne: { filter: { _id: "u2" }, update: { $inc: { age: 1 } } } },
-]);
+]).execute();
 ```
 
 ---
@@ -148,9 +148,9 @@ await users.updateMany(
   () => ({}),
   $ => $.pipe(
     $.set($ => ({ fullName: $.concat("$firstName", " ", "$lastName") })),
-    $.unset("firstName", "lastName"),
+    // Keep required fields; the final shape must remain assignable to the schema.
   ),
-);
+).execute();
 ```
 
 ### Debug with `.toMQL()`
@@ -212,6 +212,9 @@ $project($ => ({
 # Type checks only (what CI runs)
 npm run test:types
 
+# Packed ESM/CommonJS consumers, including declaration checks
+npm run test:package
+
 # Runtime tests only
 npm run test:runtime
 
@@ -224,3 +227,16 @@ npm test
 ```bash
 npm run build
 ```
+
+## Compiler and schema guarantees
+
+Builds, declaration emission, and project type checks use native **TypeScript 7.0.2**.
+The `typescript` dependency aliases the TypeScript 6 API compatibility package for
+ESLint; `@typescript/native` provides the TypeScript 7 `tsc` executable. The `tsd`
+assertion runner keeps its own compiler, so type tests are checked by both runners.
+
+Schemas supply document types; Sluice does not automatically parse, decode, or
+install MongoDB validators. Validate untrusted data explicitly before writes.
+Update pipelines preserve the collection schema at their final stage; use the
+migration builder and an appropriately typed native collection for schema changes.
+Mutations return builders and require `.execute()`.

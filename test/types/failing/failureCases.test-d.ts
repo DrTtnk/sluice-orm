@@ -194,7 +194,7 @@ const invalidFilterInput = users
       badFilter: $.filter({
         // @ts-expect-error: $name is string, not ArrayArg
         input: "$name",
-        cond: $ => true,
+        cond: true,
       }),
     })),
   )
@@ -209,7 +209,7 @@ const invalidReduceInput = users
         // @ts-expect-error: $name is string, not ArrayArg
         input: "$name",
         initialValue: "",
-        in: $ => "$$this",
+        in: () => "$$this",
       }),
     })),
   )
