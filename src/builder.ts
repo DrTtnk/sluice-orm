@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/unified-signatures */
-import { BSON, type Decimal128, type ObjectId } from "mongodb";
+import { BSON, type Decimal128, type Double, type Int32, type Long, type ObjectId } from "mongodb";
 
 import { resolveAccumulator, type TypedAccumulator } from "./accumulator-utils.js";
+import type { NonZeroInteger, PositiveInteger, WholeNumber } from "./numeric-literals.js";
 import type { PathType } from "./paths.js";
 import type { PipelineBuilder } from "./pipeline-types.js";
 // Type imports for proper operator typing
@@ -13,7 +14,6 @@ import type {
   ArrayArgInput,
   ArrayIn,
   BooleanArg,
-  BooleanArgInput,
   CallbackOnlyError,
   DateArg,
   DateArgInput,
@@ -32,6 +32,7 @@ import type {
   ValidMatchFilterWithBuilder,
   WindowSpec,
 } from "./sluice.js";
+import type { OpaqueError } from "./type-errors.js";
 import type { Dict, MergeWithIndexOverride, ShallowMergeObjectsOverride, SimplifyWritable } from "./type-utils.js";
 
 type Stage = Dict<unknown>;
@@ -75,12 +76,14 @@ type ArrayToObjectResult<Elem> =
 // ==========================================
 
 // Unary operators: single argument in, specific type out
-type UnaryNumericOp<C> = <const T extends NumericArg<C>>(arg: T & NumericArgInput<C, T>) => Ret<C, number>;
+type UnaryNumericOp<C> = <const T extends NumericArg<C>>(
+  arg: T & NumericArgInput<C, T>,
+) => Ret<C, NullishResult<C, T, number>>;
 
 type BinaryNumericOp<C> = <const L extends NumericArg<C>, const R extends NumericArg<C>>(
   left: L & NumericArgInput<C, L>,
   right: R & NumericArgInput<C, R>,
-) => Ret<C, number>;
+) => Ret<C, NullishResultFromArgs<C, [L, R], number>>;
 
 type UnaryStringToNumber<C> = <const T extends StringArg<C>>(exp: StringArgInput<C, T>) => Ret<C, number>;
 
@@ -101,8 +104,19 @@ type UnaryTypeConversion<C, Output> = <const T extends ExprArg<C>>(
 
 type HasNullish<T> = [Extract<T, null | undefined>] extends [never] ? false : true;
 type NullishResult<C, T, Output> = HasNullish<ResolveType<C, T>> extends true ? Output | null : Output;
-type NullishResultFromArgs<C, T extends readonly ExprArg<C>[], Output> =
+type NullishResultFromArgs<C, T extends readonly unknown[], Output> =
   HasNullish<ResolveType<C, T[number]>> extends true ? Output | null : Output;
+
+// What an operator returns for a null or missing operand: null, or the type of its `onNull` option
+type NullFallback<C, Operand, OnNull> =
+  HasNullish<ResolveType<C, Operand>> extends true ?
+    [OnNull] extends [never] ?
+      null
+    : ResolveType<C, OnNull>
+  : never;
+
+// The server returns null for a missing value, never undefined
+type MissingAsNull<T> = undefined extends T ? Exclude<T, undefined> | null : T;
 
 type ConvertTo = "double" | "string" | "objectId" | "bool" | "date" | "int" | "long" | "decimal";
 
@@ -123,56 +137,83 @@ type BinaryArrayOp<C> = <const A extends ArrayArg<C>, const B extends ArrayArg<C
 type UnaryArrayToNumber<C> = <const T extends ArrayArg<C>>(exp: T & ArrayArgInput<C, T>) => Ret<C, number>;
 
 // Comparison operator type (complex pattern shared by eq, gt, gte, lt, lte, ne)
-type ComparisonOp<C> = <const L extends ExprArg<C>, const R extends CompatibleArg<C, ResolveType<C, L>>>(
-  left: L extends `$${infer Rest}` ?
-    Rest extends `$${string}` ? L
-    : L extends AnyPathFieldRef<C> ? L
-    : never
-  : L,
-  right: R extends `$${infer Rest}` ?
-    Rest extends `$${string}` ? R
-    : ResolveType<C, R> extends ResolveType<C, L> ? R
-    : never
-  : R,
-) => Ret<C, boolean>;
+// What a value of each member of a type can be at runtime. Operands are comparable when they share a kind.
+type OperandKind<T> =
+  unknown extends T ? "any"
+  : T extends null ? "null"
+  : T extends undefined ? "undefined"
+  : T extends string ? "string"
+  : T extends number | bigint | Decimal128 | Double | Int32 | Long ? "number"
+  : T extends boolean ? "boolean"
+  : T extends Date ? "date"
+  : T extends readonly unknown[] ? "array"
+  : T extends ObjectId ? "objectId"
+  : T extends object ? "object"
+  : "other";
+
+type OperandsOverlap<A, B> =
+  [A] extends [never] ? true
+  : [B] extends [never] ? true
+  : "any" extends OperandKind<A> | OperandKind<B> ? true
+  : [Extract<OperandKind<A>, OperandKind<B>>] extends [never] ? false
+  : true;
+
+// Comparison operator type shared by eq, gt, gte, lt, lte, ne and cmp. The operand types must overlap.
+type ComparisonOp<C, Output = boolean> = <const L extends ExprArg<C>, const R extends ExprArg<C> | ArrayArg<C>>(
+  left: ExprArgInput<C, L>,
+  right: OperandsOverlap<ResolveType<C, L>, ResolveType<C, R>> extends true ?
+    R extends ExprArg<C> ?
+      ExprArgInput<C, R>
+    : R
+  : OpaqueError<"The operand types do not overlap, so the comparison can never match">,
+) => Ret<C, Output>;
 
 // Varargs operators
-type VarargsBooleanOp<C> = <const T extends BooleanArg<C>[]>(
-  ...args: { [K in keyof T]: T[K] & BooleanArgInput<C, T[K]> }
+// MongoDB treats null, missing, 0 and false as false, so any expression is a valid operand
+type VarargsBooleanOp<C> = <const T extends ExprArg<C>[]>(
+  ...args: { [K in keyof T]: T[K] & ExprArgInput<C, T[K]> }
 ) => Ret<C, boolean>;
+
+type UnaryWholeNumberOp<C> = <const T extends NumericArg<C>>(
+  arg: T & NumericArgInput<C, T> & WholeNumber<T>,
+) => Ret<C, NullishResult<C, T, number>>;
+
+type VarargsWholeNumberOp<C> = <const T extends NumericArg<C>[]>(
+  ...args: { [K in keyof T]: T[K] & NumericArgInput<C, T[K]> & WholeNumber<T[K]> }
+) => Ret<C, NullishResultFromArgs<C, T, number>>;
 
 type VarargsNumericOp<C> = <const T extends NumericArg<C>[]>(
   ...args: T extends readonly NumericArg<C>[] ? T : never
-) => Ret<C, number>;
+) => Ret<C, NullishResultFromArgs<C, T, number>>;
 
 type NumericArgs<C> = readonly [NumericArg<C>, NumericArg<C>, ...NumericArg<C>[]];
 type NumericArgsInput<C, T extends readonly NumericArg<C>[]> = {
   [K in keyof T]: NumericArgInput<C, T[K]>;
 };
 type AddOp<C> = {
-  <const T extends NumericArgs<C>>(...args: NumericArgsInput<C, T>): Ret<C, number>;
+  <const T extends NumericArgs<C>>(...args: NumericArgsInput<C, T>): Ret<C, NullishResultFromArgs<C, T, number>>;
   <const D extends DateArg<C>, const T extends readonly [NumericArg<C>, ...NumericArg<C>[]]>(
     date: DateArgInput<C, D>,
     ...args: NumericArgsInput<C, T>
-  ): Ret<C, Date>;
+  ): Ret<C, NullishResultFromArgs<C, [D, ...T], Date>>;
   <const T extends readonly [NumericArg<C>, ...NumericArg<C>[]], const D extends DateArg<C>>(
     ...args: [...NumericArgsInput<C, T>, DateArgInput<C, D>]
-  ): Ret<C, Date>;
+  ): Ret<C, NullishResultFromArgs<C, [...T, D], Date>>;
 };
 
 type SubtractOp<C> = {
   <const L extends DateArg<C>, const R extends DateArg<C>>(
     left: DateArgInput<C, L>,
     right: DateArgInput<C, R>,
-  ): Ret<C, number>;
+  ): Ret<C, NullishResultFromArgs<C, [L, R], number>>;
   <const L extends DateArg<C>, const R extends NumericArg<C>>(
     left: DateArgInput<C, L>,
     right: NumericArgInput<C, R>,
-  ): Ret<C, Date>;
+  ): Ret<C, NullishResultFromArgs<C, [L, R], Date>>;
   <const L extends NumericArg<C>, const R extends NumericArg<C>>(
     left: NumericArgInput<C, L>,
     right: NumericArgInput<C, R>,
-  ): Ret<C, number>;
+  ): Ret<C, NullishResultFromArgs<C, [L, R], number>>;
 };
 
 type SortPath<C> = PathType<C> | `_id.${string}`;
@@ -225,33 +266,6 @@ type ConcatStrings<T extends readonly unknown[]> =
       : string
     : string
   : "";
-
-// Compatible argument type for comparison operators
-type CompatibleArg<C, T> =
-  [T] extends [unknown] ?
-    [unknown] extends [T] ?
-      ExprArg<C>
-    : CompatibleArgKnown<C, T>
-  : CompatibleArgKnown<C, T>;
-
-type CompatibleArgKnown<C, T> =
-  | Ret<C, T>
-  | `$$${string}`
-  | (T extends boolean ? BooleanArg<C>
-    : T extends number ? NumericArg<C>
-    : T extends string ? `$${string}` | Ret<C, string> | `$$${string}`
-    : T extends Date ? DateArg<C>
-    : never)
-  | (T extends boolean ? boolean
-    : T extends number ? number
-    : T extends string ? string & {}
-    : T extends Date ? Date
-    : T extends null | undefined ? null | undefined
-    : never)
-  | (T extends (infer E)[] ? CompatibleArg<C, E> | ArrayArg<C> : never);
-
-// Generic path field ref
-type AnyPathFieldRef<C> = `$${string}`;
 
 export type RuntimeValue =
   | number
@@ -382,17 +396,17 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
   sqrt: UnaryNumericOp<C> = this.id("sqrt");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/trunc/
-  trunc: <const T extends NumericArg<C>, const P extends NumericArg<C>>(
+  trunc: <const T extends NumericArg<C>, const P extends NumericArg<C> = never>(
     num: T & NumericArgInput<C, T>,
     place?: P & NumericArgInput<C, P>,
-  ) => Ret<C, number> = (num, place) =>
+  ) => Ret<C, NullishResultFromArgs<C, [T, P], number>> = (num, place) =>
     place !== undefined ? this.varargs("trunc")(num, place) : this.options("trunc")(num);
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/round/
-  round: <const T extends NumericArg<C>, const P extends NumericArg<C>>(
+  round: <const T extends NumericArg<C>, const P extends NumericArg<C> = never>(
     num: T & NumericArgInput<C, T>,
     place?: P & NumericArgInput<C, P>,
-  ) => Ret<C, number> = (num, place) =>
+  ) => Ret<C, NullishResultFromArgs<C, [T, P], number>> = (num, place) =>
     place !== undefined ? this.varargs("round")(num, place) : this.options("round")(num);
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/exp/
@@ -456,7 +470,7 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
     exp: AccumulatorArgInput<C, T>,
   ) => Ret<
     C,
-    Mode extends "accumulator" ? ResolveType<C, T>
+    Mode extends "accumulator" ? MissingAsNull<ResolveType<C, T>>
     : ResolveType<C, T> extends readonly (infer E)[] ? E | null
     : ResolveType<C, T> | null
   > = this.id("first");
@@ -483,7 +497,7 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
     exp: AccumulatorArgInput<C, T>,
   ) => Ret<
     C,
-    Mode extends "accumulator" ? ResolveType<C, T>
+    Mode extends "accumulator" ? MissingAsNull<ResolveType<C, T>>
     : ResolveType<C, T> extends readonly (infer E)[] ? E | null
     : ResolveType<C, T> | null
   > = this.id("last");
@@ -518,25 +532,25 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/maxN/
   maxN: <const T extends ArrayArg<C>, const N extends NumericArg<C>>(options: {
     input: T & ArrayArgInput<C, T>;
-    n: N & NumericArgInput<C, N>;
+    n: N & NumericArgInput<C, N> & PositiveInteger<N>;
   }) => Ret<C, Mode extends "accumulator" ? ResolveType<C, T>[] : ResolveType<C, T>> = this.options("maxN");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/minN/
   minN: <const T extends ArrayArg<C>, const N extends NumericArg<C>>(options: {
     input: T & ArrayArgInput<C, T>;
-    n: N & NumericArgInput<C, N>;
+    n: N & NumericArgInput<C, N> & PositiveInteger<N>;
   }) => Ret<C, Mode extends "accumulator" ? ResolveType<C, T>[] : ResolveType<C, T>> = this.options("minN");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/firstN/
   firstN: <const T extends ArrayArg<C>, const N extends NumericArg<C>>(options: {
     input: T & ArrayArgInput<C, T>;
-    n: N & NumericArgInput<C, N>;
+    n: N & NumericArgInput<C, N> & PositiveInteger<N>;
   }) => Ret<C, Mode extends "accumulator" ? ResolveType<C, T>[] : ResolveType<C, T>> = this.options("firstN");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/lastN/
   lastN: <const T extends ArrayArg<C>, const N extends NumericArg<C>>(options: {
     input: T & ArrayArgInput<C, T>;
-    n: N & NumericArgInput<C, N>;
+    n: N & NumericArgInput<C, N> & PositiveInteger<N>;
   }) => Ret<C, Mode extends "accumulator" ? ResolveType<C, T>[] : ResolveType<C, T>> = this.options("lastN");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/objectToArray/
@@ -546,9 +560,9 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/range/
   range: <const S extends NumericArg<C>, const E extends NumericArg<C>, const St extends NumericArg<C> = never>(
-    start: S & NumericArgInput<C, S>,
-    end: E & NumericArgInput<C, E>,
-    step?: St & NumericArgInput<C, St>,
+    start: S & NumericArgInput<C, S> & WholeNumber<S>,
+    end: E & NumericArgInput<C, E> & WholeNumber<E>,
+    step?: St & NumericArgInput<C, St> & NonZeroInteger<St>,
   ) => Ret<C, number[]> = (start, end, step) =>
     step !== undefined ? this.varargs("range")(start, end, step) : this.varargs("range")(start, end);
 
@@ -618,8 +632,7 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
   // ==========================================
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/cmp/
-  cmp: <const T extends ExprArg<C>>(left: ExprArgInput<C, T>, right: ExprArgInput<C, T>) => Ret<C, -1 | 0 | 1> =
-    this.varargs("cmp");
+  cmp: ComparisonOp<C, -1 | 0 | 1> = this.varargs("cmp");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/eq/
   eq: ComparisonOp<C> = this.varargs("eq");
@@ -655,8 +668,8 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
   // Conditional operators (fully typed from ExprBuilder)
   /** Evaluates a boolean expression and returns one of two values.
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/cond/ */
-  cond: <const B extends BooleanArg<C>, const T extends ExprArg<C>, const E extends ExprArg<C>>(options: {
-    if: B & BooleanArgInput<C, B>;
+  cond: <const B extends ExprArg<C>, const T extends ExprArg<C>, const E extends ExprArg<C>>(options: {
+    if: B & ExprArgInput<C, B>;
     then: T & ExprArgInput<C, T>;
     else: E & ExprArgInput<C, E>;
   }) => Ret<C, ResolveType<C, T> | ResolveType<C, E>> = this.options("cond");
@@ -669,7 +682,7 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
 
   /** Evaluates a series of case expressions, returning the value of the first match.
    * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/switch/ */
-  switch: <const Br extends readonly { case: BooleanArg<C>; then: ExprArg<C> }[], const D extends ExprArg<C>>(options: {
+  switch: <const Br extends readonly { case: ExprArg<C>; then: ExprArg<C> }[], const D extends ExprArg<C>>(options: {
     branches: Br;
     default: D;
   }) => Ret<C, ResolveType<C, Br[number]["then"]> | ResolveType<C, D>> = this.options("switch");
@@ -678,7 +691,8 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/concat/
   concat: <const T extends StringArg<C>[]>(
     ...args: { [K in keyof T]: StringArgInput<C, T[K]> }
-  ) => Ret<C, ConcatStrings<{ [K in keyof T]: ResolveType<C, T[K]> }>> = this.varargs("concat");
+  ) => Ret<C, NullishResultFromArgs<C, T, ConcatStrings<{ [K in keyof T]: ResolveType<C, T[K]> }>>> =
+    this.varargs("concat");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/indexOfBytes/
   indexOfBytes: <const S extends StringArg<C>, const Sub extends StringArg<C>, const N extends NumericArg<C>>(
@@ -686,7 +700,7 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
     substring: StringArgInput<C, Sub>,
     start?: N & NumericArgInput<C, N>,
     end?: N & NumericArgInput<C, N>,
-  ) => Ret<C, number> = (string, substring, start, end) => {
+  ) => Ret<C, NullishResult<C, S, number>> = (string, substring, start, end) => {
     const args: unknown[] = [string, substring];
     // The server reads the arguments by position, so a lone `end` needs the default `start`.
     if (start !== undefined || end !== undefined) args.push(start ?? 0);
@@ -700,7 +714,7 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
     substring: StringArgInput<C, Sub>,
     start?: N & NumericArgInput<C, N>,
     end?: N & NumericArgInput<C, N>,
-  ) => Ret<C, number> = (string, substring, start, end) => {
+  ) => Ret<C, NullishResult<C, S, number>> = (string, substring, start, end) => {
     const args: unknown[] = [string, substring];
     // The server reads the arguments by position, so a lone `end` needs the default `start`.
     if (start !== undefined || end !== undefined) args.push(start ?? 0);
@@ -712,21 +726,21 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
   ltrim: <const T extends StringArg<C>>(options: {
     input: StringArgInput<C, T>;
     chars?: StringArgInput<C, StringArg<C>>;
-  }) => Ret<C, string> = this.options("ltrim");
+  }) => Ret<C, NullishResult<C, T, string>> = this.options("ltrim");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/regexFind/
   regexFind: <const T extends StringArg<C>>(options: {
     input: StringArgInput<C, T>;
     regex: StringArgInput<C, StringArg<C>> | RegExp;
     options?: StringArgInput<C, StringArg<C>>;
-  }) => Ret<C, { match: string; idx: number; captures: string[] } | null> = this.options("regexFind");
+  }) => Ret<C, { match: string; idx: number; captures: (string | null)[] } | null> = this.options("regexFind");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/regexFindAll/
   regexFindAll: <const T extends StringArg<C>>(options: {
     input: StringArgInput<C, T>;
     regex: StringArgInput<C, StringArg<C>> | RegExp;
     options?: StringArgInput<C, StringArg<C>>;
-  }) => Ret<C, { match: string; idx: number; captures: string[] }[]> = this.options("regexFindAll");
+  }) => Ret<C, { match: string; idx: number; captures: (string | null)[] }[]> = this.options("regexFindAll");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/regexMatch/
   regexMatch: <const T extends StringArg<C>>(options: {
@@ -736,24 +750,24 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
   }) => Ret<C, boolean> = this.options("regexMatch");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/replaceAll/
-  replaceAll: <const T extends StringArg<C>>(options: {
+  replaceAll: <const T extends StringArg<C>, const F extends StringArg<C>, const R extends StringArg<C>>(options: {
     input: StringArgInput<C, T>;
-    find: StringArgInput<C, StringArg<C>>;
-    replacement: StringArgInput<C, StringArg<C>>;
-  }) => Ret<C, string> = this.options("replaceAll");
+    find: StringArgInput<C, F>;
+    replacement: StringArgInput<C, R>;
+  }) => Ret<C, NullishResultFromArgs<C, [T, F, R], string>> = this.options("replaceAll");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/replaceOne/
-  replaceOne: <const T extends StringArg<C>>(options: {
+  replaceOne: <const T extends StringArg<C>, const F extends StringArg<C>, const R extends StringArg<C>>(options: {
     input: StringArgInput<C, T>;
-    find: StringArgInput<C, StringArg<C>>;
-    replacement: StringArgInput<C, StringArg<C>>;
-  }) => Ret<C, string> = this.options("replaceOne");
+    find: StringArgInput<C, F>;
+    replacement: StringArgInput<C, R>;
+  }) => Ret<C, NullishResultFromArgs<C, [T, F, R], string>> = this.options("replaceOne");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/rtrim/
   rtrim: <const T extends StringArg<C>>(options: {
     input: StringArgInput<C, T>;
     chars?: StringArgInput<C, StringArg<C>>;
-  }) => Ret<C, string> = this.options("rtrim");
+  }) => Ret<C, NullishResult<C, T, string>> = this.options("rtrim");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/split/
   split: <const S extends StringArg<C>, const D extends StringArg<C>>(
@@ -801,7 +815,7 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
   trim: <const T extends StringArg<C>>(options: {
     input: StringArgInput<C, T>;
     chars?: StringArgInput<C, StringArg<C>>;
-  }) => Ret<C, string> = this.options("trim");
+  }) => Ret<C, NullishResult<C, T, string>> = this.options("trim");
 
   // Set operators (fully typed from ExprBuilder)
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/allElementsTrue/
@@ -856,13 +870,18 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
   dateFromParts: <const T>(opts: T) => Ret<C, Date> = this.options("dateFromParts");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/dateFromString/
-  dateFromString: <const D extends StringArg<C>>(options: {
+  dateFromString: <
+    const D extends StringArg<C>,
+    const ER extends ExprArg<C> = never,
+    const ON extends ExprArg<C> = never,
+  >(options: {
     dateString: D;
     format?: StringArg<C>;
     timezone?: StringArg<C>;
-    onError?: ExprArgInput<C, ExprArg<C>>;
-    onNull?: ExprArgInput<C, ExprArg<C>>;
-  }) => Ret<C, Date> = this.options("dateFromString");
+    onError?: ExprArgInput<C, ER>;
+    onNull?: ExprArgInput<C, ON>;
+  }) => Ret<C, Date | NullFallback<C, D, ON> | ([ER] extends [never] ? never : ResolveType<C, ER>)> =
+    this.options("dateFromString");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/dateSubtract/
   dateSubtract: <const T extends DateArg<C>, const N extends NumericArg<C>>(options: {
@@ -901,12 +920,12 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
   > = this.options("dateToParts");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/dateToString/
-  dateToString: <const T extends DateArg<C>>(options: {
+  dateToString: <const T extends DateArg<C>, const ON extends ExprArg<C> = never>(options: {
     date: T & DateArgInput<C, T>;
     format?: StringArg<C>;
     timezone?: StringArg<C>;
-    onNull?: ExprArgInput<C, ExprArg<C>>;
-  }) => Ret<C, string> = this.options("dateToString");
+    onNull?: ExprArgInput<C, ON>;
+  }) => Ret<C, string | NullFallback<C, T, ON>> = this.options("dateToString");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/dateTrunc/
   dateTrunc: <const T extends DateArg<C>, const N extends NumericArg<C>>(options: {
@@ -915,7 +934,7 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
     binSize?: N & NumericArgInput<C, N>;
     timezone?: StringArg<C>;
     startOfWeek?: string;
-  }) => Ret<C, Date> = this.options("dateTrunc");
+  }) => Ret<C, NullishResult<C, T, Date>> = this.options("dateTrunc");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/dayOfMonth/
   dayOfMonth: UnaryDateToNumber<C> = this.id("dayOfMonth");
@@ -974,7 +993,7 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
   } = this.options("convert");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/isNumber/
-  isNumber: UnaryTypeConversion<C, boolean> = this.id("isNumber");
+  isNumber: <const T extends ExprArg<C>>(exp: ExprArgInput<C, T>) => Ret<C, boolean> = this.id("isNumber");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/toBool/
   toBool: UnaryTypeConversion<C, boolean> = this.id("toBool");
@@ -1110,16 +1129,16 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
 
   // Bitwise operators (fully typed from ExprBuilder)
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/bitAnd/
-  bitAnd: VarargsNumericOp<C> = this.varargs("bitAnd");
+  bitAnd: VarargsWholeNumberOp<C> = this.varargs("bitAnd");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/bitOr/
-  bitOr: VarargsNumericOp<C> = this.varargs("bitOr");
+  bitOr: VarargsWholeNumberOp<C> = this.varargs("bitOr");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/bitXor/
-  bitXor: VarargsNumericOp<C> = this.varargs("bitXor");
+  bitXor: VarargsWholeNumberOp<C> = this.varargs("bitXor");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/bitNot/
-  bitNot: UnaryNumericOp<C> = this.id("bitNot");
+  bitNot: UnaryWholeNumberOp<C> = this.id("bitNot");
   // Trigonometric operators (fully typed from ExprBuilder)
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/sin/
   sin: UnaryNumericOp<C> = this.id("sin");
@@ -1184,14 +1203,32 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/max/
   max: {
-    <const T extends AccumulatorExprArg<C>>(exp: AccumulatorArgInput<C, T>): Ret<C, ResolveType<C, T>>;
-    <const T extends AccumulatorExprArg<C>[]>(...args: AccumulatorArgInputs<C, T>): Ret<C, ResolveType<C, T[number]>>;
+    <const T extends AccumulatorExprArg<C>>(
+      exp: AccumulatorArgInput<C, T>,
+    ): Ret<
+      C,
+      Mode extends "accumulator" ? MissingAsNull<ResolveType<C, T>>
+      : ResolveType<C, T> extends readonly (infer E)[] ? E | null
+      : MissingAsNull<ResolveType<C, T>>
+    >;
+    <const T extends AccumulatorExprArg<C>[]>(
+      ...args: AccumulatorArgInputs<C, T>
+    ): Ret<C, MissingAsNull<ResolveType<C, T[number]>>>;
   } = this.flexible("max");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/min/
   min: {
-    <const T extends AccumulatorExprArg<C>>(exp: AccumulatorArgInput<C, T>): Ret<C, ResolveType<C, T>>;
-    <const T extends AccumulatorExprArg<C>[]>(...args: AccumulatorArgInputs<C, T>): Ret<C, ResolveType<C, T[number]>>;
+    <const T extends AccumulatorExprArg<C>>(
+      exp: AccumulatorArgInput<C, T>,
+    ): Ret<
+      C,
+      Mode extends "accumulator" ? MissingAsNull<ResolveType<C, T>>
+      : ResolveType<C, T> extends readonly (infer E)[] ? E | null
+      : MissingAsNull<ResolveType<C, T>>
+    >;
+    <const T extends AccumulatorExprArg<C>[]>(
+      ...args: AccumulatorArgInputs<C, T>
+    ): Ret<C, MissingAsNull<ResolveType<C, T[number]>>>;
   } = this.flexible("min");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/stdDevPop/
@@ -1204,10 +1241,9 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/stdDevSamp/
   stdDevSamp: {
-    <const T extends AccumulatorExprArg<C>>(exp: AccumulatorArgInput<C, T>): Ret<C, NullishResult<C, T, number>>;
-    <const T extends AccumulatorExprArg<C>[]>(
-      ...args: AccumulatorArgInputs<C, T>
-    ): Ret<C, NullishResultFromArgs<C, T, number>>;
+    // A single value gives null
+    <const T extends AccumulatorExprArg<C>>(exp: AccumulatorArgInput<C, T>): Ret<C, number | null>;
+    <const T extends AccumulatorExprArg<C>[]>(...args: AccumulatorArgInputs<C, T>): Ret<C, number | null>;
   } = this.flexible("stdDevSamp");
 }
 
@@ -1241,7 +1277,7 @@ export class AccumulatorBuilder<C> extends BaseBuilder<C, "accumulator"> {
   bottom: <const TOutput extends ExprArg<C>, const TSort extends SortBySpec<C>>(options: {
     output: ExprArgInput<C, TOutput>;
     sortBy: TSort;
-  }) => Ret<C, ResolveType<C, TOutput>> = this.options("bottom");
+  }) => Ret<C, MissingAsNull<ResolveType<C, TOutput>>> = this.options("bottom");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/bottomN/
   bottomN: <
@@ -1251,20 +1287,20 @@ export class AccumulatorBuilder<C> extends BaseBuilder<C, "accumulator"> {
   >(options: {
     output: ExprArgInput<C, TOutput>;
     sortBy: TSort;
-    n: N & NumericArgInput<C, N>;
+    n: N & NumericArgInput<C, N> & PositiveInteger<N>;
   }) => Ret<C, ResolveType<C, TOutput>[]> = this.options("bottomN");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/top/
   top: <const T extends SortBySpec<C>, const O extends ExprArg<C>>(options: {
     output: ExprArgInput<C, O>;
     sortBy: T;
-  }) => Ret<C, ResolveType<C, O>> = this.options("top");
+  }) => Ret<C, MissingAsNull<ResolveType<C, O>>> = this.options("top");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/topN/
   topN: <const T extends SortBySpec<C>, const N extends NumericArg<C>, const O extends ExprArg<C>>(options: {
     output: ExprArgInput<C, O>;
     sortBy: T;
-    n: N & NumericArgInput<C, N>;
+    n: N & NumericArgInput<C, N> & PositiveInteger<N>;
   }) => Ret<C, ResolveType<C, O>[]> = this.options("topN");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/accumulator/
@@ -1350,7 +1386,7 @@ export class WindowBuilder<C> extends AccumulatorBuilder<C> {
     input: T & NumericArgInput<C, T>;
     unit?: TimeUnit;
     window?: WindowSpec;
-  }) => Ret<C, number> = options => {
+  }) => Ret<C, number | null> = options => {
     const resolved = this._resolve(options) as Dict<unknown>;
     if ("window" in resolved) {
       const { window, ...operatorArgs } = resolved;
@@ -1392,11 +1428,12 @@ export class WindowBuilder<C> extends AccumulatorBuilder<C> {
   };
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/linearFill/
-  linearFill: <const T extends ExprArg<C>>(exp: ExprArgInput<C, T>) => Ret<C, ResolveType<C, T>> =
+  linearFill: <const T extends ExprArg<C>>(exp: ExprArgInput<C, T>) => Ret<C, MissingAsNull<ResolveType<C, T>>> =
     this.id("linearFill");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/locf/
-  locf: <const T extends ExprArg<C>>(exp: ExprArgInput<C, T>) => Ret<C, ResolveType<C, T>> = this.id("locf");
+  locf: <const T extends ExprArg<C>>(exp: ExprArgInput<C, T>) => Ret<C, MissingAsNull<ResolveType<C, T>>> =
+    this.id("locf");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/percentRank/
   percentRank: () => Ret<C, number> = this.nullary("percentRank");

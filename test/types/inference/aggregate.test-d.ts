@@ -331,7 +331,7 @@ const lookup2 = users
     $lookup({
       from: orders,
       let: {
-        localUserId: "$_id", // string from User
+        localUserId: "$name", // string from User
         minAge: "$age", // number from User
       },
       pipeline: $ =>
@@ -339,7 +339,7 @@ const lookup2 = users
           // $$localUserId is typed as string, $$minAge is typed as number
           $match($ => ({
             $expr: $.and(
-              $.eq("$userId", "$$localUserId"), // Order.userId == User._id
+              $.eq("$userId", "$$localUserId"), // Order.userId == User.name (contrived but tests typing)
               $.gt("$amount", "$$minAge"), // Order.amount > User.age (contrived but tests typing)
             ),
           })),
@@ -364,7 +364,7 @@ const lookup3 = users
   .aggregate(
     $lookup({
       from: orders,
-      let: { localUserId: "$_id" },
+      let: { localUserId: "$name" },
       pipeline: $ =>
         $.pipe(
           $match($ => ({

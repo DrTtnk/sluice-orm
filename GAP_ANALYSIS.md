@@ -29,6 +29,60 @@ These decisions settle most "(design?)" rows. A row that agrees with a decision 
 | Top gap 4: `bulkWrite().execute({ ordered: false })` was ignored | `execute` merges its options over the options given to `bulkWrite`. | `test/integration/bulk-write.test.ts` (ordered and unordered) |
 | Top gap 13, part: `$indexOfBytes` and `$indexOfCP` with `end` and no `start` sent `end` as `start` | A lone `end` now sends `start: 0`. | `test/operators/stringOperators.test.ts` |
 
+### Null result typing (top gaps 1 and 2): fixed in the working tree, not committed
+
+| Area | Change | Tests |
+|---|---|---|
+| Numeric operators (`$abs`, `$add`, `$subtract`, `$multiply`, `$divide`, `$mod`, `$pow`, `$log`, `$round`, `$trunc`, trigonometry, `$bit*`) | Result is `T \| null` when an operand can be null or missing. Date forms of `$add` and `$subtract` too. | `test/types/inference/null-results.test-d.ts` |
+| String and date operators (`$concat`, `$indexOfBytes`, `$indexOfCP`, `$trim`, `$ltrim`, `$rtrim`, `$replaceOne`, `$replaceAll`, `$dateTrunc`, `$dateToString`, `$dateFromString`) | Same rule. `$dateToString` and `$dateFromString` use the type of `onNull` and `onError` when given. | same file |
+| `$isNumber` | Never `null`. | same file |
+| `$regexFind`, `$regexFindAll` | `captures` is `(string \| null)[]`. | same file |
+| `$first`, `$last`, `$min`, `$max`, `$top`, `$bottom`, `$locf`, `$linearFill` | A missing value gives `null`, never `undefined`. A required field stays non-null. | same file |
+| `$stdDevSamp`, `$derivative` | Always `number \| null`. A group of one document gives `null`. | same file |
+| `ResolveType` | A `Date` or BSON literal now resolves to itself. It resolved to a mapped object before. | `test/operators/dateOperators.test.ts` (existing) |
+
+Not changed: `$arrayElemAt` (an out-of-range index gives no value, not `null`), `$integral` and `$expMovingAvg` (an unbounded window always has the current document; the first pass said `null`, but the existing runtime test shows `0`), and `$.shift` (see below).
+
+Found while testing: the `output` type of the builder `$.shift` is not inferred. It resolves to `string`. This bug existed before the change.
+
+### Comparison operands (top gap 15, part): fixed in the working tree, not committed
+
+| Change | Tests |
+|---|---|
+| `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte` and `$cmp` accept two operands when their types overlap. `number \| null` against `number` and `string \| number` against `string \| null` compile. `$cmp("$num", 250)` compiles. `string` against `number`, `number` against `null`, an array against one of its elements, and an optional field against `null` do not. | `test/types/inference/comparison-operands.test-d.ts`, `test/types/failing/comparison-operands.test-d.ts` |
+| Expression `$max` and `$min` of an array return the element type or `null`. They returned the array type. In `$group` they still return the array type. | `test/types/inference/complexIntegration.test-d.ts` (expectation corrected) |
+
+Three existing type tests compared `Order.userId` (a `string`) with `User._id` (an `ObjectId`), which can never match. The new rule rejects it. The tests now compare with `User.name`: `aggregate.test-d.ts` and `stage-improvements.test-d.ts`.
+
+### Boolean operands (top gap 15, part): fixed in the working tree, not committed
+
+| Change | Tests |
+|---|---|
+| `$and`, `$or`, `$nor`, `$cond.if` and `$switch.case` accept any expression. A field reference must still point to an existing field. `$not` already accepted any expression. | `test/types/inference/truthiness-operands.test-d.ts`, `test/types/failing/truthiness-operands.test-d.ts` |
+
+### Pipeline-form updates (top gap 11): fixed in the working tree, not committed
+
+| Change | Tests |
+|---|---|
+| `updateOne` and `updateMany` with a pipeline accept `upsert` and `hint`. They rejected every option. A pipeline update rejects `arrayFilters`, as MongoDB does. | `test/integration/pipeline-update-options.test.ts`, `test/types/failing/pipeline-update-options.test-d.ts` |
+| `findOneAndUpdate` accepts a pipeline. The pipeline was typed out and the runtime sent the callback to the driver. | same files |
+| `bulkWrite` `updateOne` and `updateMany` accept a pipeline callback in `update`. `src/registry.ts` turns it into stages. | same files |
+
+### Numeric literal checks (top gap 20, part): fixed in the working tree, not committed
+
+A number literal outside the documented range is a compile error. A value typed `number` passes, because only a literal shows the mistake. The checks are in `src/numeric-literals.ts`.
+
+| Argument | Rule |
+|---|---|
+| `$limit`, `$sample.size`, `$bucketAuto.buckets`, `n` of `$firstN`, `$lastN`, `$maxN`, `$minN`, `$topN`, `$bottomN` | positive integer |
+| `$skip`, `$graphLookup.maxDepth` | non-negative integer |
+| `$range` step | non-zero integer |
+| `$range` start and end, operands of `$bitAnd`, `$bitOr`, `$bitXor`, `$bitNot` | integer |
+
+Tests: `test/types/inference/numeric-literals.test-d.ts`, `test/types/failing/numeric-literals.test-d.ts`.
+
+Not done: the operand of an update `$bit` operation. An inline `{ and: 1.5 }` is inferred as `number`, so the literal check does not see it. It works only for a variable declared `as const`. The `n` rules for the `n` operators come from the server error, because the v8.0 pages do not state a range. `$skip: 0` is allowed, although the page says "positive".
+
 ## 2. Totals (verified rows)
 
 Rows are counted per verifier-table row. "Out of scope" means a CONFIRMED gap that is newer than 8.0, Atlas-only, or a driver or admin API (section 6).

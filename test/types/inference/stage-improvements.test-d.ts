@@ -54,7 +54,7 @@ const lookupWithPipelineArray = users
   .aggregate(
     $lookup({
       from: orders,
-      let: { uid: "$_id" },
+      let: { uid: "$name" },
       pipeline: $ => $.pipe($match($ => ({ $expr: $.eq("$userId", "$$uid") }))),
       as: "orders",
     }),

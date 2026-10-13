@@ -6,6 +6,7 @@ import type { ChangeStreamDocument, Document, ObjectId } from "mongodb";
 import type { GreaterThan, IsAny, IsUnknown, Simplify } from "type-fest";
 
 import { AccumulatorBuilder, WindowBuilder } from "./builder.js";
+import type { NonNegativeInteger, PositiveInteger } from "./numeric-literals.js";
 import type { ArrayRootPath, ComparablePath, PathType } from "./paths.js";
 import { pushStage, resolveStage, unwrapRet } from "./runtime-utils.js";
 import {
@@ -359,9 +360,10 @@ export const $bucketAuto = pushStage(options => ({
   C,
   const G extends ExpressionIn<C>,
   const O extends Dict<ExpressionIn<C>> | undefined = undefined,
+  const N extends number = number,
 >(options: {
   groupBy: G;
-  buckets: number;
+  buckets: N & PositiveInteger<N>;
   output?: O;
   granularity?:
     | "R5"
@@ -560,13 +562,14 @@ export const $graphLookup = pushStage(
   const TFrom extends Collection,
   const TAs extends string,
   const TDF extends string | undefined = undefined,
+  const TMaxDepth extends number = number,
 >(options: {
   from: TFrom;
   startWith: ExpressionIn<C>;
   connectFromField: keyof ForeignType<TFrom> & string;
   connectToField: keyof ForeignType<TFrom> & string;
   as: TAs;
-  maxDepth?: number;
+  maxDepth?: TMaxDepth & NonNegativeInteger<TMaxDepth>;
   depthField?: TDF;
   restrictSearchWithMatch?: AnyDict;
 }) => <TIn>(agg: Agg<TIn, C>) => Agg<TIn, C & Record<TAs, (ForeignType<TFrom> & Record<TDF & string, number>)[]>>;
@@ -597,7 +600,7 @@ export const $indexStats = pushStage(() => ({ $indexStats: {} })) as unknown as 
 /** Limits the number of documents passed to the next stage.
  * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/limit/ */
 export const $limit = pushStage(n => ({ $limit: n })) as unknown as <C, const T extends number>(
-  n: T,
+  n: T & PositiveInteger<T>,
 ) => <TIn>(agg: Agg<TIn, C>) => Agg<TIn, C>;
 
 type LetToContext<C, Let extends Dict<ExpressionIn<C>>> = {
@@ -763,7 +766,7 @@ export const $sample = pushStage(options => ({ $sample: resolveStage(options) })
   C,
   const T extends number,
 >(options: {
-  size: T;
+  size: T & PositiveInteger<T>;
 }) => <TIn>(agg: Agg<TIn, C>) => Agg<TIn, C>;
 
 /** Adds new fields to documents. Alias for `$addFields`.
@@ -795,7 +798,7 @@ export const $setWindowFields = pushStage(options => ({
 /** Skips the first N documents.
  * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/skip/ */
 export const $skip = pushStage(n => ({ $skip: n })) as unknown as <C, const T extends number>(
-  n: T,
+  n: T & NonNegativeInteger<T>,
 ) => <TIn>(agg: Agg<TIn, C>) => Agg<TIn, C>;
 
 /** Sorts all input documents and returns them in the specified order.

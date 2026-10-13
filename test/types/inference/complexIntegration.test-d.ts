@@ -547,7 +547,7 @@ expectType<string[]>({} as DescendantType["path"]);
 expectType<number>({} as DescendantType["depth"]);
 expectType<number>({} as CategoryTree[number]["descendantCount"]);
 // maxDepth result from $.max over array is number | null (empty array case)
-expectType<number[]>({} as CategoryTree[number]["maxDepth"]);
+expectType<number | null>({} as CategoryTree[number]["maxDepth"]);
 
 // ============================================
 // TEST 6: Complex $bucket with accumulator expressions (NOW WITH CALLBACK SUPPORT!)

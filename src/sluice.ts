@@ -1,3 +1,4 @@
+import type { BSONValue } from "bson";
 import type { JSONSchema } from "json-schema-to-typescript"; // Used for future JSON Schema inference
 import type { BSONTypeAlias } from "mongodb";
 
@@ -164,6 +165,7 @@ export type ResolveType<C, T> =
     : ExtractThis<C>
   : T extends `$${infer P}` ? ResolvePathValue<C, P>
   : T extends Ret<any, infer R> ? R
+  : T extends Date | BSONValue ? T
   : T extends object ? ResolveObject<C, T>
   : T;
 
