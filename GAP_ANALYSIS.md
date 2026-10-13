@@ -7,6 +7,20 @@
 This document lists the places where sluice-orm differs from the MongoDB 8.0 API. It helps the maintainers choose what to fix. Ten first-pass agents compared the library with the MongoDB docs. A second pass checked every claim again. The second pass wrote new TypeScript probe files and ran them with tsc 7 (`strict`, `exactOptionalPropertyTypes`, same flags as `tsconfig.test.json`). It also read the code and fetched the `https://www.mongodb.com/docs/v8.0/...` pages again. The first pass had used 9.0 pages for some items. No real MongoDB 8.0 server run was possible, so rows about server behaviour come from code reading and docs text only. When the docs text is unclear, the row is marked UNSURE (section 7). A verdict CONFIRMED means: the probe compiled or failed as the row says, or the code shows the fact. Severity: S1 = wrong result type or wrong runtime behaviour. S2 = invalid MQL compiles, or valid MQL is rejected. S3 = missing feature. S4 = missing test only. "(design?)" means the library is strict on purpose and the maintainers must decide.
 Counting note: totals in section 2 are counted from the verifier tables, one row per claim. Several rows describe the same root cause (for example, `$limit` accepts `0`). A fix at one place can close many rows.
 
+### Maintainer decisions (2026-10-13)
+
+These decisions settle most "(design?)" rows. A row that agrees with a decision is "by design" and is not a gap.
+
+| Topic | Decision |
+|---|---|
+| Boolean operands (`$and`, `$or`, `$cond.if`, `$switch.case`) | Accept any expression, as MongoDB does. |
+| Comparison operators (`$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$cmp`) | Operand types must overlap. `string \| number` against `string \| null` is allowed, because the runtime value can match. `null` against a field whose type has no `null` is rejected. `string` against `number` is rejected. |
+| Numeric argument checks (`$limit`, `$skip`, `$sample`, `$range`, `n`, `$bit`, `$bucketAuto` buckets) | Use literal-type refinement. Reject bad number literals at compile time. A variable of type `number` still passes. No branded types. |
+| Scope | Core MongoDB 8.0 data APIs only. Atlas search stages, features newer than 8.0, and admin or management APIs (section 6) are parked. |
+| `_id` on `insertOne`, `insertMany`, `replaceOne`, `findOneAndReplace` | Keep `_id` always required. |
+| Typo guards | Keep strict: `$unset` of a missing field, unknown key in a find projection, unknown key in a find `sort`. Dotted paths stay allowed in sort and projection. |
+| Pipeline-form updates | Fix. Accept options, `findOneAndUpdate` and bulk updates. Write the tests first. |
+
 ## 2. Totals (verified rows)
 
 Rows are counted per verifier-table row. "Out of scope" means a CONFIRMED gap that is newer than 8.0, Atlas-only, or a driver or admin API (section 6).
