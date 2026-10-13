@@ -41,9 +41,9 @@ These decisions settle most "(design?)" rows. A row that agrees with a decision 
 | `$stdDevSamp`, `$derivative` | Always `number \| null`. A group of one document gives `null`. | same file |
 | `ResolveType` | A `Date` or BSON literal now resolves to itself. It resolved to a mapped object before. | `test/operators/dateOperators.test.ts` (existing) |
 
-Not changed: `$arrayElemAt` (an out-of-range index gives no value, not `null`), `$integral` and `$expMovingAvg` (an unbounded window always has the current document; the first pass said `null`, but the existing runtime test shows `0`), and `$.shift` (see below).
+Not changed: `$arrayElemAt` (an out-of-range index gives no value, not `null`), `$integral` and `$expMovingAvg` (an unbounded window always has the current document; the first pass said `null`, but the existing runtime test shows `0`).
 
-Found while testing: the `output` type of the builder `$.shift` is not inferred. It resolves to `string`. This bug existed before the change.
+Also fixed: the builder `$.shift` returns `T | null` outside the window, or the type of `default` when one is given. Under TypeScript 6 (which `tsd` uses) the type of `output` was not inferred and resolved to `string`. TypeScript 7 inferred it. `output` now takes `T & ExprArgInput<C, T>`, and both compilers infer `number` for a `number` field.
 
 ### Comparison operands (top gap 15, part): fixed in the working tree, not committed
 

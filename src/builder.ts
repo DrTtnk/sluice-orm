@@ -294,6 +294,20 @@ export class Ret<out Context = unknown, T = unknown> {
 
 type AnyRet = Ret<never, never>;
 
+type ShiftOp<C> = <
+  const T extends ExprArg<C>,
+  const B extends NumericArg<C>,
+  const D extends ExprArg<C> | undefined = undefined,
+>(options: {
+  output: T & ExprArgInput<C, T>;
+  by: B & NumericArgInput<C, B>;
+  default?: D & ExprArgInput<C, NonNullable<D>>;
+}) => Ret<
+  C,
+  // Outside the window the value is null, unless a default is given
+  MissingAsNull<ResolveType<C, T>> | ([D] extends [undefined] ? null : ResolveType<C, D>)
+>;
+
 type ElemMatchFn = <const E>(filter: ($: ExprBuilder<E>) => ValidMatchFilterWithBuilder<E>) => {
   $elemMatch: ValidMatchFilterWithBuilder<E>;
 };
@@ -1442,9 +1456,5 @@ export class WindowBuilder<C> extends AccumulatorBuilder<C> {
   rank: () => Ret<C, number> = this.nullary("rank");
 
   // https://www.mongodb.com/docs/manual/reference/operator/aggregation/shift/
-  shift: <const T extends ExprArg<C>, const B extends NumericArg<C>>(options: {
-    output: ExprArgInput<C, T>;
-    by: B & NumericArgInput<C, B>;
-    default?: ExprArgInput<C, ExprArg<C>>;
-  }) => Ret<C, ResolveType<C, T>> = this.options("shift");
+  shift: ShiftOp<C> = this.options("shift");
 }

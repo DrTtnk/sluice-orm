@@ -244,6 +244,10 @@ const windowed = measurements
         locfOk: $.locf("$num"),
         locfOptional: $.locf("$optionalNum"),
         linearFillNullable: $.linearFill("$nullableNum"),
+        shiftNoDefault: $.shift({ output: "$num", by: 1 }),
+        shiftOptional: $.shift({ output: "$optionalNum", by: -1 }),
+        shiftDefault: $.shift({ output: "$num", by: 1, default: 0 }),
+        shiftNullableDefault: $.shift({ output: "$nullableNum", by: 1, default: "none" }),
         derivativeValue: $.derivative({ input: "$num", unit: "hour" }),
         integralValue: $.integral({ input: "$num", unit: "hour" }),
         movingAverage: $.expMovingAvg({ input: "$num", N: 3 }),
@@ -257,6 +261,11 @@ type WindowedDoc = Awaited<typeof windowed>[number];
 expectType<number>({} as WindowedDoc["locfOk"]);
 expectType<number | null>({} as WindowedDoc["locfOptional"]);
 expectType<number | null>({} as WindowedDoc["linearFillNullable"]);
+// Outside the window the value is null, unless a default is given
+expectType<number | null>({} as WindowedDoc["shiftNoDefault"]);
+expectType<number | null>({} as WindowedDoc["shiftOptional"]);
+expectType<number>({} as WindowedDoc["shiftDefault"]);
+expectType<number | "none" | null>({} as WindowedDoc["shiftNullableDefault"]);
 expectType<number | null>({} as WindowedDoc["derivativeValue"]);
 expectType<number>({} as WindowedDoc["integralValue"]);
 expectType<number>({} as WindowedDoc["movingAverage"]);

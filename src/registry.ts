@@ -100,6 +100,8 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
     return resolveStage(filterFn) as Filter<T>;
   };
 
+  // Each method is cast through `unknown`: comparing it with the generic CrudCollection method type is too deep for
+  // TypeScript 7 (TS2589), and the error appears at random because its checker runs in parallel.
   return {
     find: ((filterFn?: unknown, options?: FindOptions<T>) => ({
       _filter: filterFn ? extractFilter(filterFn) : undefined,
@@ -121,7 +123,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
         const filter = filterFn ? extractFilter(filterFn) : {};
         return mongoCol.findOne(filter as Filter<T>, options as FindOneOptions) as unknown as Promise<T | null>;
       },
-    })) as CrudCollection<T>["find"],
+    })) as unknown as CrudCollection<T>["find"],
 
     findOne: ((filterFn?: unknown, options?: FindOptions<T>) => ({
       _filter: filterFn ? extractFilter(filterFn) : undefined,
@@ -135,7 +137,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
           filterFn ? extractFilter(filterFn) : {},
           options as FindOneOptions,
         ) as unknown as Promise<T | null>,
-    })) as CrudCollection<T>["findOne"],
+    })) as unknown as CrudCollection<T>["findOne"],
 
     insertOne: doc => ({
       _doc: doc,
@@ -161,7 +163,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
         _options: options,
         execute: () => mongoCol.updateOne(filter, updateDoc as Document, options as UpdateOptions),
       };
-    }) as CrudCollection<T>["updateOne"],
+    }) as unknown as CrudCollection<T>["updateOne"],
 
     updateMany: ((
       filterFn: unknown,
@@ -177,24 +179,24 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
         _options: options,
         execute: () => mongoCol.updateMany(filter, updateDoc as Document, options as UpdateOptions),
       };
-    }) as CrudCollection<T>["updateMany"],
+    }) as unknown as CrudCollection<T>["updateMany"],
 
     replaceOne: ((filterFn: unknown, replacement: T, options?: unknown) => ({
       _filter: extractFilter(filterFn),
       _replacement: replacement,
       _options: options,
       execute: () => mongoCol.replaceOne(extractFilter(filterFn), replacement, options as ReplaceOptions),
-    })) as CrudCollection<T>["replaceOne"],
+    })) as unknown as CrudCollection<T>["replaceOne"],
 
     deleteOne: ((filterFn: unknown) => ({
       _filter: extractFilter(filterFn),
       execute: () => mongoCol.deleteOne(extractFilter(filterFn)),
-    })) as CrudCollection<T>["deleteOne"],
+    })) as unknown as CrudCollection<T>["deleteOne"],
 
     deleteMany: ((filterFn: unknown) => ({
       _filter: extractFilter(filterFn),
       execute: () => mongoCol.deleteMany(extractFilter(filterFn)),
-    })) as CrudCollection<T>["deleteMany"],
+    })) as unknown as CrudCollection<T>["deleteMany"],
 
     findOneAndDelete: ((
       filterFn: unknown,
@@ -211,7 +213,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
       _filter: extractFilter(filterFn),
       execute: () =>
         mongoCol.findOneAndDelete(extractFilter(filterFn), options as FindOneAndDeleteOptions).then(r => r as T | null),
-    })) as CrudCollection<T>["findOneAndDelete"],
+    })) as unknown as CrudCollection<T>["findOneAndDelete"],
 
     findOneAndReplace: ((
       filterFn: unknown,
@@ -233,7 +235,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
         mongoCol
           .findOneAndReplace(extractFilter(filterFn), replacement as never, options as FindOneAndReplaceOptions)
           .then(r => r as T | null),
-    })) as CrudCollection<T>["findOneAndReplace"],
+    })) as unknown as CrudCollection<T>["findOneAndReplace"],
 
     findOneAndUpdate: ((
       filterFn: unknown,
@@ -259,7 +261,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
             .findOneAndUpdate(extractFilter(filterFn), updateDoc as Document, options as FindOneAndUpdateOptions)
             .then(r => r as T | null),
       };
-    }) as CrudCollection<T>["findOneAndUpdate"],
+    }) as unknown as CrudCollection<T>["findOneAndUpdate"],
 
     countDocuments: (
       filterFn?: unknown,
@@ -281,7 +283,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
 
     distinct: ((field: string, filterFn?: unknown) => ({
       execute: () => mongoCol.distinct(field, filterFn ? extractFilter(filterFn) : {}),
-    })) as CrudCollection<T>["distinct"],
+    })) as unknown as CrudCollection<T>["distinct"],
 
     bulkWrite: ((operations: readonly unknown[], options?: { ordered?: boolean }) => ({
       _operations: operations,
