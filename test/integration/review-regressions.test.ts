@@ -1,19 +1,12 @@
 import { Effect } from "effect";
-import { Binary, Decimal128, Long, type Db } from "mongodb";
+import { Binary, type Db, Decimal128, Long } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import {
-  $group,
-  $match,
-  $project,
-  $set,
-  makeMongoDbClientLayer,
-  registry,
-  registryEffect,
-} from "../../src/index.js";
+import { $group, $match, $project, $set, makeMongoDbClientLayer, registry, registryEffect } from "../../src/index.js";
 import { setup, teardown } from "../utils/setup.js";
 
 const schemas = {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   reviewUsers: { Type: null! as { _id: string; name: string; age: number; tags: string[] } },
 };
 describe("Review regressions against MongoDB", () => {
@@ -58,6 +51,7 @@ describe("Review regressions against MongoDB", () => {
 
   it("supports immutable aggregation chaining", async () => {
     const users = registry("8.0", schemas)(db).reviewUsers;
+    // eslint-disable-next-line custom/aggregate-must-tolist
     const base = users.aggregate($match(() => ({})));
     const grouped = base.pipe($group($ => ({ _id: null, count: $.sum(1) })));
     expect(base.stages).toHaveLength(1);
@@ -88,14 +82,16 @@ describe("Review regressions against MongoDB", () => {
       const adults = yield* users
         .find($ => ({ $expr: $.gt("$age", 18) }), { projection: { name: 1, _id: 0 } })
         .toList();
+      // eslint-disable-next-line custom/aggregate-must-tolist
       const counts = yield* users
         .aggregate($match(() => ({})))
         .pipe($group($ => ({ _id: null, count: $.sum(1) })))
         .toList();
       return { adults, counts };
     });
-    expect(
-      await Effect.runPromise(program.pipe(Effect.provide(makeMongoDbClientLayer(db)))),
-    ).toEqual({ adults: [{ name: "Alice" }], counts: [{ _id: null, count: 2 }] });
+    expect(await Effect.runPromise(program.pipe(Effect.provide(makeMongoDbClientLayer(db))))).toEqual({
+      adults: [{ name: "Alice" }],
+      counts: [{ _id: null, count: 2 }],
+    });
   });
 });

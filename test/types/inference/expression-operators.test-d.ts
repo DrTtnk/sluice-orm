@@ -3,14 +3,7 @@ import { ObjectId as _ObjectId } from "bson";
 import type { Db } from "mongodb";
 import { expectType } from "tsd";
 
-import {
-  $group,
-  $match,
-  $project,
-  $setWindowFields,
-  $unwind,
-  collection,
-} from "../../../src/sluice.js";
+import { $group, $match, $project, $setWindowFields, $unwind, collection } from "../../../src/sluice.js";
 
 const ObjectIdSchema = S.instanceOf(_ObjectId);
 
@@ -81,9 +74,7 @@ type ValidSortByDoc = Awaited<typeof validSortBy>[number];
 expectType<number>({} as ValidSortByDoc["topScore"]);
 
 // $unwind preserveNullAndEmptyArrays
-const unwindPreserve = docs
-  .aggregate($unwind({ path: "$tags", preserveNullAndEmptyArrays: true }))
-  .toList();
+const unwindPreserve = docs.aggregate($unwind({ path: "$tags", preserveNullAndEmptyArrays: true })).toList();
 
 type UnwindPreserveDoc = Awaited<typeof unwindPreserve>[number];
 expectType<string | null | undefined>({} as UnwindPreserveDoc["tags"]);

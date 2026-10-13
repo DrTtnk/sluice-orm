@@ -37,9 +37,7 @@ describe("Effect Registry with Layer", () => {
       expect(user).toMatchObject({ _id: "1", name: "Alice", age: 30, active: true });
 
       // Update
-      const updateResult = yield* registry.users
-        .updateOne(() => ({ _id: "1" }), { $set: { age: 31 } })
-        .execute();
+      const updateResult = yield* registry.users.updateOne(() => ({ _id: "1" }), { $set: { age: 31 } }).execute();
       expect(updateResult.modifiedCount).toBe(1);
 
       // Verify update
@@ -102,9 +100,7 @@ describe("Effect Registry with Layer", () => {
     const program = Effect.gen(function* () {
       const registry = yield* registryEffect("8.0", { users: UserSchema });
 
-      yield* registry.users
-        .insertOne({ _id: "compose1", name: "Dave", age: 40, active: true })
-        .execute();
+      yield* registry.users.insertOne({ _id: "compose1", name: "Dave", age: 40, active: true }).execute();
 
       const user = yield* registry.users.find(() => ({ _id: "compose1" })).toOne();
 

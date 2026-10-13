@@ -32,11 +32,7 @@ export type TypedAccumulator<
   lang: "js";
 };
 
-export const resolveAccumulator = <
-  InitFn extends (...args: any[]) => any,
-  AccArgs extends readonly unknown[],
-  Result,
->(
+export const resolveAccumulator = <InitFn extends (...args: any[]) => any, AccArgs extends readonly unknown[], Result>(
   config: TypedAccumulator<InitFn, AccArgs, Result>,
 ) => {
   const result = {

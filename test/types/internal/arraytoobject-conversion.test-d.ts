@@ -23,11 +23,7 @@ import type { Dict, ToObjKV, ToObjTuple } from "../../../src/type-utils.js";
 
 // Test 2: KV array with union of literal keys (expands properly)
 {
-  type Input = [
-    { k: "has_tag_admin"; v: boolean },
-    { k: "has_tag_user"; v: boolean },
-    { k: "count"; v: number },
-  ];
+  type Input = [{ k: "has_tag_admin"; v: boolean }, { k: "has_tag_user"; v: boolean }, { k: "count"; v: number }];
   type Result = ToObjKV<Input>;
   expectType<Result>(
     {} as {
@@ -65,12 +61,7 @@ import type { Dict, ToObjKV, ToObjTuple } from "../../../src/type-utils.js";
 
 // Test 4: KV array with mixed value types
 {
-  type Input = [
-    { k: "id"; v: number },
-    { k: "name"; v: string },
-    { k: "active"; v: boolean },
-    { k: "date"; v: Date },
-  ];
+  type Input = [{ k: "id"; v: number }, { k: "name"; v: string }, { k: "active"; v: boolean }, { k: "date"; v: Date }];
   type Result = ToObjKV<Input>;
   expectType<Result>(
     {} as {
@@ -85,6 +76,7 @@ import type { Dict, ToObjKV, ToObjTuple } from "../../../src/type-utils.js";
 // Test 5: Empty array should return empty object
 {
   type Result = ToObjKV<[]>;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
   expectType<Result>({} as Dict<never>);
 }
 
@@ -173,6 +165,7 @@ import type { Dict, ToObjKV, ToObjTuple } from "../../../src/type-utils.js";
 // Test 12: Empty tuple array should return empty object
 {
   type Result = ToObjTuple<[]>;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
   expectType<Result>({} as Dict<never>);
 }
 
@@ -205,10 +198,7 @@ import type { Dict, ToObjKV, ToObjTuple } from "../../../src/type-utils.js";
 
 // Test 16: Readonly KV should work too
 {
-  type Input = readonly [
-    { readonly k: "key1"; readonly v: string },
-    { readonly k: "key2"; readonly v: number },
-  ];
+  type Input = readonly [{ readonly k: "key1"; readonly v: string }, { readonly k: "key2"; readonly v: number }];
   type Result = ToObjKV<Input>;
   expectType<Result>({} as { key1: string; key2: number });
 }

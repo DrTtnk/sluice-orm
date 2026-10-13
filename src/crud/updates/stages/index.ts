@@ -5,20 +5,9 @@
  * Update pipelines use the exact same StageFunction types as aggregation pipelines.
  */
 
-import type {
-  TypedPipeline,
-  UpdatePipelineBuilder,
-  UpdateStageFunction,
-} from "../../../pipeline-types.js";
+import type { TypedPipeline, UpdatePipelineBuilder, UpdateStageFunction } from "../../../pipeline-types.js";
 import type { Agg } from "../../../sluice.js";
-import {
-  $addFields,
-  $project,
-  $replaceRoot,
-  $replaceWith,
-  $set,
-  $unset,
-} from "../../../sluice-stages.js";
+import { $addFields, $project, $replaceRoot, $replaceWith, $set, $unset } from "../../../sluice-stages.js";
 
 /**
  * Type for the context-aware update operators passed as `$` to update pipeline callbacks.
@@ -58,7 +47,7 @@ export const update = <C>(): UpdateOperators<C> => {
     const result = stages.reduce((agg, stage) => stage(agg), fakeAgg);
     return {
       __pipelineIn: undefined as unknown as C,
-      __pipelineOut: undefined as unknown,
+      __pipelineOut: undefined,
       stages: result.stages,
     };
   };

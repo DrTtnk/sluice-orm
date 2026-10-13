@@ -223,9 +223,7 @@ describe("Accumulators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.String, uniqueTags: S.Array(S.Array(S.String)) }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.String, uniqueTags: S.Array(S.Array(S.String)) }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([
@@ -280,9 +278,7 @@ describe("Accumulators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.String, avgPrice: S.Union(S.Number, S.Null) }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.String, avgPrice: S.Union(S.Number, S.Null) }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([
@@ -302,9 +298,7 @@ describe("Accumulators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.instanceOf(ObjectId), avgRating: S.Union(S.Number, S.Null) }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.instanceOf(ObjectId), avgRating: S.Union(S.Number, S.Null) }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([
@@ -328,9 +322,7 @@ describe("Accumulators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.String, avgTotal: S.Union(S.Number, S.Null) }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.String, avgTotal: S.Union(S.Number, S.Null) }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([
@@ -372,9 +364,7 @@ describe("Accumulators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.instanceOf(ObjectId), totalRatings: S.Number }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.instanceOf(ObjectId), totalRatings: S.Number }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([
@@ -579,9 +569,7 @@ describe("Accumulators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.instanceOf(ObjectId), firstTag: S.Array(S.String) }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.instanceOf(ObjectId), firstTag: S.Array(S.String) }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([
@@ -628,9 +616,7 @@ describe("Accumulators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.instanceOf(ObjectId), lastTag: S.Array(S.String) }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.instanceOf(ObjectId), lastTag: S.Array(S.String) }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([
@@ -1054,9 +1040,7 @@ describe("Accumulators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.String, bottomProducts: S.Array(S.String) }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.String, bottomProducts: S.Array(S.String) }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([
@@ -1411,9 +1395,7 @@ describe("Accumulators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.instanceOf(ObjectId), ema: S.NullOr(S.Number) }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.instanceOf(ObjectId), ema: S.NullOr(S.Number) }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([
@@ -1453,9 +1435,7 @@ describe("Accumulators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.instanceOf(ObjectId), ema: S.NullOr(S.Number) }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.instanceOf(ObjectId), ema: S.NullOr(S.Number) }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([
@@ -1497,9 +1477,7 @@ describe("Accumulators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.instanceOf(ObjectId), derivative: S.Union(S.Number, S.Null) }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.instanceOf(ObjectId), derivative: S.Union(S.Number, S.Null) }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([
@@ -1540,9 +1518,7 @@ describe("Accumulators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.instanceOf(ObjectId), integral: S.NullOr(S.Number) }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.instanceOf(ObjectId), integral: S.NullOr(S.Number) }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([
@@ -1576,9 +1552,7 @@ describe("Accumulators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.instanceOf(ObjectId), filledPrice: S.Number }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.instanceOf(ObjectId), filledPrice: S.Number }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([
@@ -1731,9 +1705,7 @@ describe("Window Operators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.instanceOf(ObjectId), runningTotal: S.Number }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.instanceOf(ObjectId), runningTotal: S.Number }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([
@@ -1770,9 +1742,7 @@ describe("Window Operators", () => {
         )
         .toList();
 
-      const expectedSchema = S.Array(
-        S.Struct({ _id: S.instanceOf(ObjectId), movingAvg: S.Union(S.Number, S.Null) }),
-      );
+      const expectedSchema = S.Array(S.Struct({ _id: S.instanceOf(ObjectId), movingAvg: S.Union(S.Number, S.Null) }));
       assertSync(expectedSchema, res);
 
       expect(res).toEqual([

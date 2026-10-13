@@ -238,9 +238,7 @@ describe("CRUD Updates (hardcore desiderata)", () => {
   it("inc on nested array element", async () => {
     const complexColl = dbRegistry(db).complex;
 
-    await complexColl
-      .updateOne($ => ({ _id: "c1" }), { $inc: { "arrayField.0.data.0": 10 } })
-      .execute();
+    await complexColl.updateOne($ => ({ _id: "c1" }), { $inc: { "arrayField.0.data.0": 10 } }).execute();
 
     const updated = await complexColl.findOne($ => ({ _id: "c1" })).toOne();
     assertSync(S.Tuple(ComplexSchema), [updated ?? (null as never)]);
@@ -425,9 +423,7 @@ describe("CRUD Updates (hardcore desiderata)", () => {
 
     it("should handle $set with empty array (regression test)", async () => {
       const complexColl = dbRegistry(db).complex;
-      await complexColl
-        .updateOne($ => ({ _id: "c1" }), { $set: { "nested.items.0.tags": [] } })
-        .execute();
+      await complexColl.updateOne($ => ({ _id: "c1" }), { $set: { "nested.items.0.tags": [] } }).execute();
 
       const doc = await complexColl.findOne($ => ({ _id: "c1" })).toOne();
       if (!doc) throw new Error("Missing doc c1");
@@ -477,25 +473,19 @@ describe("CRUD Updates (hardcore desiderata)", () => {
         .execute();
 
       // $mul
-      await complexColl
-        .updateOne($ => ({ _id: "num1" }), { $mul: { "nested.metadata.score": 2 } })
-        .execute();
+      await complexColl.updateOne($ => ({ _id: "num1" }), { $mul: { "nested.metadata.score": 2 } }).execute();
 
       let doc = await complexColl.findOne($ => ({ _id: "num1" })).toOne();
       expect(doc?.nested.metadata.score).toBe(20);
 
       // $min
-      await complexColl
-        .updateOne($ => ({ _id: "num1" }), { $min: { "nested.metadata.score": 5 } })
-        .execute();
+      await complexColl.updateOne($ => ({ _id: "num1" }), { $min: { "nested.metadata.score": 5 } }).execute();
 
       doc = await complexColl.findOne($ => ({ _id: "num1" })).toOne();
       expect(doc?.nested.metadata.score).toBe(5);
 
       // $max
-      await complexColl
-        .updateOne($ => ({ _id: "num1" }), { $max: { "nested.metadata.score": 50 } })
-        .execute();
+      await complexColl.updateOne($ => ({ _id: "num1" }), { $max: { "nested.metadata.score": 50 } }).execute();
 
       doc = await complexColl.findOne($ => ({ _id: "num1" })).toOne();
       expect(doc?.nested.metadata.score).toBe(50);

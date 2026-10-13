@@ -10,9 +10,7 @@ type _TakeAfter<T extends string[], U extends string> =
   : [];
 
 type MinMongo<T extends MongoVersions[number]> =
-  _TakeAfter<MongoVersions, T> extends [infer _, ...infer Rest extends string[]] ? Rest[number]
-  : never;
+  _TakeAfter<MongoVersions, T> extends [infer _, ...infer Rest extends string[]] ? Rest[number] : never;
 
 type MinAtlas<T extends AtlasVersions[number]> =
-  _TakeAfter<AtlasVersions, T> extends [infer _, ...infer Rest extends string[]] ? Rest[number]
-  : never;
+  _TakeAfter<AtlasVersions, T> extends [infer _, ...infer Rest extends string[]] ? Rest[number] : never;

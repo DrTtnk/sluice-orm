@@ -276,9 +276,7 @@ const valid_replace_root = users.aggregate($replaceRoot({ newRoot: "$profile" })
 const valid_replace_root_system = users.aggregate($replaceRoot("$$ROOT"));
 
 // VALID: $replaceRoot with object expression
-const valid_replace_root_object = users.aggregate(
-  $replaceRoot({ newRoot: { name: "$name", email: "$email" } }),
-);
+const valid_replace_root_object = users.aggregate($replaceRoot({ newRoot: { name: "$name", email: "$email" } }));
 
 // VALID: $replaceRoot with builder callback
 const valid_replace_root_builder = users.aggregate(

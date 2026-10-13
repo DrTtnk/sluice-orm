@@ -56,13 +56,7 @@ export type {
 } from "./pipeline-types.js";
 
 // --- Registry & Collection ---
-export type {
-  BoundCollection,
-  Collection,
-  CollectionType,
-  InferSchema,
-  SchemaLike,
-} from "./registry.js";
+export type { BoundCollection, Collection, CollectionType, InferSchema, SchemaLike } from "./registry.js";
 export { collection, registry } from "./registry.js";
 
 // --- Effect-based Registry & Collection ---

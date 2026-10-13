@@ -86,9 +86,7 @@ describe("CRUD Find Options Runtime Tests", () => {
 
   it("find with filter, sort, and limit", async () => {
     const coll = dbReg(db).items;
-    const result = await coll
-      .find($ => ({ category: "A" }), { sort: { score: 1 }, limit: 2 })
-      .toList();
+    const result = await coll.find($ => ({ category: "A" }), { sort: { score: 1 }, limit: 2 }).toList();
     expect(result).toHaveLength(2);
     expect(result[0]!.name).toBe("alpha"); // score 50
     expect(result[1]!.name).toBe("echo"); // score 60

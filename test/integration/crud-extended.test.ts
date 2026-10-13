@@ -92,9 +92,7 @@ describe("Extended CRUD Operations", () => {
       const coll = dbRegistry(db).items;
       // Insert a temp doc to delete
       const tempId = new ObjectId();
-      await coll
-        .insertOne({ _id: tempId, name: "temp", score: 0, tags: [], active: false })
-        .execute();
+      await coll.insertOne({ _id: tempId, name: "temp", score: 0, tags: [], active: false }).execute();
 
       const deleted = await coll.findOneAndDelete($ => ({ _id: tempId })).execute();
       expect(deleted).not.toBeNull();
@@ -111,9 +109,7 @@ describe("Extended CRUD Operations", () => {
     it("should find and replace document", async () => {
       const coll = dbRegistry(db).items;
       const tempId = new ObjectId();
-      await coll
-        .insertOne({ _id: tempId, name: "toReplace", score: 5, tags: ["old"], active: true })
-        .execute();
+      await coll.insertOne({ _id: tempId, name: "toReplace", score: 5, tags: ["old"], active: true }).execute();
 
       const replaced = await coll
         .findOneAndReplace($ => ({ _id: tempId }), {
@@ -143,13 +139,9 @@ describe("Extended CRUD Operations", () => {
     it("should find and update document", async () => {
       const coll = dbRegistry(db).items;
       const tempId = new ObjectId();
-      await coll
-        .insertOne({ _id: tempId, name: "toUpdate", score: 1, tags: [], active: true })
-        .execute();
+      await coll.insertOne({ _id: tempId, name: "toUpdate", score: 1, tags: [], active: true }).execute();
 
-      const result = await coll
-        .findOneAndUpdate($ => ({ _id: tempId }), { $set: { score: 42 } })
-        .execute();
+      const result = await coll.findOneAndUpdate($ => ({ _id: tempId }), { $set: { score: 42 } }).execute();
 
       expect(result).not.toBeNull();
 

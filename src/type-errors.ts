@@ -31,56 +31,36 @@ export type InvalidFieldError<Field extends string, Context = unknown> = TypeErr
 /**
  * Type mismatch error - got wrong type for an operator
  */
-export type TypeMismatchError<
-  Operator extends string,
-  Expected extends string,
-  Got extends string,
-> = TypeError<`${Operator}: expected ${Expected}, got ${Got}`, Expected, Got>;
+export type TypeMismatchError<Operator extends string, Expected extends string, Got extends string> = TypeError<
+  `${Operator}: expected ${Expected}, got ${Got}`,
+  Expected,
+  Got
+>;
 
 /**
  * Numeric type error - expected number but got something else
  */
-export type NumericTypeError<Got extends string> = TypeMismatchError<
-  "$numeric",
-  "number | numeric field ref",
-  Got
->;
+export type NumericTypeError<Got extends string> = TypeMismatchError<"$numeric", "number | numeric field ref", Got>;
 
 /**
  * String type error - expected string but got something else
  */
-export type StringTypeError<Got extends string> = TypeMismatchError<
-  "$string",
-  "string | string field ref",
-  Got
->;
+export type StringTypeError<Got extends string> = TypeMismatchError<"$string", "string | string field ref", Got>;
 
 /**
  * Array type error - expected array but got something else
  */
-export type ArrayTypeError<Got extends string> = TypeMismatchError<
-  "$array",
-  "array | array field ref",
-  Got
->;
+export type ArrayTypeError<Got extends string> = TypeMismatchError<"$array", "array | array field ref", Got>;
 
 /**
  * Boolean type error - expected boolean but got something else
  */
-export type BooleanTypeError<Got extends string> = TypeMismatchError<
-  "$boolean",
-  "boolean | boolean field ref",
-  Got
->;
+export type BooleanTypeError<Got extends string> = TypeMismatchError<"$boolean", "boolean | boolean field ref", Got>;
 
 /**
  * Date type error - expected Date but got something else
  */
-export type DateTypeError<Got extends string> = TypeMismatchError<
-  "$date",
-  "Date | date field ref",
-  Got
->;
+export type DateTypeError<Got extends string> = TypeMismatchError<"$date", "Date | date field ref", Got>;
 
 // ==========================================
 // Update Operation Errors

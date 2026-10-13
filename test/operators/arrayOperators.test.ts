@@ -312,9 +312,7 @@ describe("Array Operators Runtime Tests", () => {
     });
 
     const results = await dbRegistry(db)
-      .docs.aggregate(
-        $addFields($ => ({ scoreWithTag: $.zip({ inputs: ["$scores", "$tags", "$values"] }) })),
-      )
+      .docs.aggregate($addFields($ => ({ scoreWithTag: $.zip({ inputs: ["$scores", "$tags", "$values"] }) })))
       .toList();
 
     assertSync(S.Array(ResultSchema), results);

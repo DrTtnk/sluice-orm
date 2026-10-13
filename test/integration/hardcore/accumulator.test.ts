@@ -93,8 +93,7 @@ describe("Hardcore: $accumulator with custom JavaScript functions", () => {
                 accumulateArgs: ["$email"],
                 merge:
                   "function(state1, state2) { return { hash: state1.hash + state2.hash, count: state1.count + state2.count, salt: state1.salt }; }",
-                finalize:
-                  "function(state) { return state.salt + state.hash.toString(16) + '_' + state.count; }",
+                finalize: "function(state) { return state.salt + state.hash.toString(16) + '_' + state.count; }",
                 lang: "js",
               },
             },

@@ -3,8 +3,7 @@ import type { Simplify } from "type-fest";
 import type { OpaqueError } from "./type-errors.js";
 
 type KeysWithFlag<P, Flag> = { [K in keyof P]: P[K] extends Flag ? K : never }[keyof P];
-type IsDynamic<P> =
-  true extends { [K in keyof P]: 0 | 1 extends P[K] ? true : false }[keyof P] ? true : false;
+type IsDynamic<P> = true extends { [K in keyof P]: 0 | 1 extends P[K] ? true : false }[keyof P] ? true : false;
 type Projected<C, P> = Simplify<
   IsDynamic<P> extends true ? Partial<C>
   : Exclude<KeysWithFlag<P, 0>, "_id"> extends never ?

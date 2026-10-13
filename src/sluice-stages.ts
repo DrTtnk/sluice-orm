@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unified-signatures */
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 // ==========================================
 // Pipeline Stages - All $stage declarations
@@ -34,8 +33,7 @@ import type { __, AnyDict, Dict } from "./type-utils.js";
 type RuntimeAgg = { stages?: Dict<unknown>[] } & Dict<unknown>;
 
 type DotPathToObject<Path extends string, Value> =
-  Path extends `${infer Head}.${infer Tail}` ? { [K in Head]: DotPathToObject<Tail, Value> }
-  : { [K in Path]: Value };
+  Path extends `${infer Head}.${infer Tail}` ? { [K in Head]: DotPathToObject<Tail, Value> } : { [K in Path]: Value };
 
 type DeepMerge<A, B> =
   A extends object ?
@@ -72,10 +70,7 @@ type KeysWithValue<Spec, V> = {
 
 type ValidateProjectRules<Spec> =
   Exclude<KeysWithValue<Spec, 0>, "_id"> extends never ? Spec
-  : Exclude<keyof Spec, KeysWithValue<Spec, 0> | Extract<KeysWithValue<Spec, 1>, "_id">> extends (
-    never
-  ) ?
-    Spec
+  : Exclude<keyof Spec, KeysWithValue<Spec, 0> | Extract<KeysWithValue<Spec, 1>, "_id">> extends never ? Spec
   : CallbackOnlyError<"$project cannot mix exclusion (0) with inclusion or computed fields except for _id">;
 
 type ProjectIdResult<C, Spec> =
@@ -140,8 +135,7 @@ type WindowOperatorSpec<C> =
   | { $integral: { input: ExpressionIn<C>; unit?: TimeUnit } };
 
 type HasNullish<T> = [Extract<T, null | undefined>] extends [never] ? false : true;
-type NullishResult<C, T, Output> =
-  HasNullish<ResolveType<C, T>> extends true ? Output | null : Output;
+type NullishResult<C, T, Output> = HasNullish<ResolveType<C, T>> extends true ? Output | null : Output;
 
 type WindowOperatorResult<C, Op> =
   Op extends Ret<C, infer T> ? T
@@ -208,10 +202,7 @@ type HasRangeWindowWithoutUnit<Output> =
 type RequiresSortBy<C, Output extends Dict<WindowOperatorSpec<C>>> =
   true extends (
     {
-      [K in keyof Output]: Output[K] extends (
-        { $rank: any } | { $denseRank: any } | { $percentRank: any }
-      ) ?
-        true
+      [K in keyof Output]: Output[K] extends { $rank: any } | { $denseRank: any } | { $percentRank: any } ? true
       : false;
     }[keyof Output]
   ) ?
@@ -306,17 +297,14 @@ type ReplaceRootResolved<C, R> =
   : ResolveType<C, R>;
 
 type IsStrictlyAscending<T extends readonly number[]> =
-  T extends (
-    readonly [infer A extends number, infer B extends number, ...infer Rest extends number[]]
-  ) ?
+  T extends readonly [infer A extends number, infer B extends number, ...infer Rest extends number[]] ?
     number extends A | B ? true
     : GreaterThan<B, A> extends false ? false
     : IsStrictlyAscending<[B, ...Rest]>
   : true;
 
 type AscendingBoundaries<T extends readonly number[]> =
-  IsStrictlyAscending<T> extends true ? T
-  : OpaqueError<"$bucket boundaries must be strictly increasing">;
+  IsStrictlyAscending<T> extends true ? T : OpaqueError<"$bucket boundaries must be strictly increasing">;
 
 // ==========================================
 // Stage Declarations
@@ -424,8 +412,7 @@ export const $collStats = pushStage(options => ({
         { storageStats: { size: number; count: number; avgObjSize: number; storageSize: number } }
       : {
           storageStats?: { size: number; count: number; avgObjSize: number; storageSize: number };
-        }) & { count: number } & (T extends { queryExecStats: any } ?
-        { queryExecStats: Dict<number> }
+        }) & { count: number } & (T extends { queryExecStats: any } ? { queryExecStats: Dict<number> }
       : { queryExecStats?: Dict<number> })
   >;
   <
@@ -450,18 +437,14 @@ export const $collStats = pushStage(options => ({
         { storageStats: { size: number; count: number; avgObjSize: number; storageSize: number } }
       : {
           storageStats?: { size: number; count: number; avgObjSize: number; storageSize: number };
-        }) & { count?: number } & (T extends { queryExecStats: any } ?
-        { queryExecStats: Dict<number> }
+        }) & { count?: number } & (T extends { queryExecStats: any } ? { queryExecStats: Dict<number> }
       : { queryExecStats?: Dict<number> })
   >;
 };
 
 /** Replaces the input documents with a count of the documents at this stage.
  * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/count/ */
-export const $count = pushStage(field => ({ $count: field })) as unknown as <
-  C,
-  const T extends string,
->(
+export const $count = pushStage(field => ({ $count: field })) as unknown as <C, const T extends string>(
   field: T,
 ) => <TIn>(agg: Agg<TIn, C>) => Agg<TIn, { [K in T]: number }>;
 
@@ -486,9 +469,7 @@ export const $densify = pushStage(options => ({ $densify: resolveStage(options) 
  * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/documents/ */
 export const $documents = ((documents: __[]) => ({
   stages: [{ $documents: documents }],
-})) as unknown as <const T extends readonly Dict<unknown>[]>(
-  documents: T,
-) => Agg<T[number], T[number]>;
+})) as unknown as <const T extends readonly Dict<unknown>[]>(documents: T) => Agg<T[number], T[number]>;
 
 /** Processes multiple aggregation pipelines on the same input documents in a single stage.
  * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/facet/ */
@@ -497,7 +478,7 @@ export const $facet = pushStage(pipelines => {
   const transformedSpec: Dict<unknown> = {};
   for (const [key, val] of Object.entries(facetSpec)) {
     if (val != null && typeof val === "object" && "stages" in val) {
-      transformedSpec[key] = (val as { stages: unknown }).stages;
+      transformedSpec[key] = val.stages;
     } else {
       transformedSpec[key] = val;
     }
@@ -552,9 +533,7 @@ export const $geoNear = pushStage(options => ({ $geoNear: resolveStage(options) 
   C &
     DeepMerge<
       DotPathToObject<TDistanceField, number>,
-      TIncludeLocs extends string ?
-        DotPathToObject<TIncludeLocs, { type: "Point"; coordinates: [number, number] }>
-      : {}
+      TIncludeLocs extends string ? DotPathToObject<TIncludeLocs, { type: "Point"; coordinates: [number, number] }> : {}
     >
 >;
 
@@ -590,9 +569,7 @@ export const $graphLookup = pushStage(
   maxDepth?: number;
   depthField?: TDF;
   restrictSearchWithMatch?: AnyDict;
-}) => <TIn>(
-  agg: Agg<TIn, C>,
-) => Agg<TIn, C & Record<TAs, (ForeignType<TFrom> & Record<TDF & string, number>)[]>>;
+}) => <TIn>(agg: Agg<TIn, C>) => Agg<TIn, C & Record<TAs, (ForeignType<TFrom> & Record<TDF & string, number>)[]>>;
 
 // GroupIdSpec - _id can be null, a field ref, a Ret expression, or a compound object of field refs / expressions
 type GroupIdSpec<C> = ExpressionIn<C> | Ret<C> | null | Dict<ExpressionIn<C> | Ret<C>>;
@@ -633,8 +610,7 @@ type StripLookupVars<T> = {
 
 // Helper: Augment foreign context with let vars if provided
 type LookupContext<TFrom extends Collection, C, TLet extends Dict<ExpressionIn<C>> | undefined> =
-  TLet extends Dict<ExpressionIn<C>> ? ForeignType<TFrom> & LetToContext<C, TLet>
-  : ForeignType<TFrom>;
+  TLet extends Dict<ExpressionIn<C>> ? ForeignType<TFrom> & LetToContext<C, TLet> : ForeignType<TFrom>;
 
 /** Performs a left outer join with another collection.
  * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/ */
@@ -670,9 +646,7 @@ export const $lookup = pushStage((options: { from: Collection } & Dict<unknown>)
       $: ExprBuilder<LookupContext<TFrom, C, TLet>>,
     ) => TypedPipeline<LookupContext<TFrom, C, TLet>, TPipelineOut>;
     as: TAs;
-  }): <TIn>(
-    agg: Agg<TIn, C>,
-  ) => Agg<TIn, Simplify<C & Record<TAs, StripLookupVars<TPipelineOut>[]>>>;
+  }): <TIn>(agg: Agg<TIn, C>) => Agg<TIn, Simplify<C & Record<TAs, StripLookupVars<TPipelineOut>[]>>>;
   // Array of raw objects (rejected - use callback form)
   <C, TFrom extends Collection, const TAs extends string>(options: {
     from: TFrom;
@@ -745,10 +719,7 @@ export const $redact = pushStage(expression => ({
     expression: ($: ExprBuilder<Simplify<C>>) => Ret<C, "$$DESCEND" | "$$PRUNE" | "$$KEEP">,
   ): <TIn>(agg: Agg<TIn, C>) => Agg<TIn, C>;
   // Overload 2: Literal or expression value
-  <
-    C,
-    const T extends "$$DESCEND" | "$$PRUNE" | "$$KEEP" | Ret<C, "$$DESCEND" | "$$PRUNE" | "$$KEEP">,
-  >(
+  <C, const T extends "$$DESCEND" | "$$PRUNE" | "$$KEEP" | Ret<C, "$$DESCEND" | "$$PRUNE" | "$$KEEP">>(
     expression: T,
   ): <TIn>(agg: Agg<TIn, C>) => Agg<TIn, C>;
 };
@@ -760,9 +731,7 @@ export const $replaceRoot = pushStage((options: unknown) => {
   // If resolved value has 'newRoot' property, use it as-is (options overloads)
   // Otherwise, wrap it in newRoot (expression overloads)
   const spec =
-    resolved !== null && typeof resolved === "object" && "newRoot" in resolved ?
-      resolved
-    : { newRoot: resolved };
+    resolved !== null && typeof resolved === "object" && "newRoot" in resolved ? resolved : { newRoot: resolved };
   return { $replaceRoot: spec };
 }) as unknown as {
   <C, const T extends { newRoot: ReplaceRootValue<C> }>(
@@ -771,9 +740,7 @@ export const $replaceRoot = pushStage((options: unknown) => {
   <C, const T extends { newRoot: ReplaceRootValue<Simplify<C>> }>(
     options: ($: ExprBuilder<Simplify<C>>) => T,
   ): UpdateStageFunction<C, ReplaceRootResolved<C, T["newRoot"]>>;
-  <C, const T extends ReplaceRootValue<C>>(
-    expression: T,
-  ): UpdateStageFunction<C, ReplaceRootResolved<C, T>>;
+  <C, const T extends ReplaceRootValue<C>>(expression: T): UpdateStageFunction<C, ReplaceRootResolved<C, T>>;
   <C, const T extends ReplaceRootValue<Simplify<C>>>(
     expression: ($: ExprBuilder<Simplify<C>>) => T,
   ): UpdateStageFunction<C, ReplaceRootResolved<C, T>>;
@@ -784,9 +751,7 @@ export const $replaceRoot = pushStage((options: unknown) => {
 export const $replaceWith = pushStage(expression => ({
   $replaceWith: resolveStage(expression),
 })) as unknown as {
-  <C, const T extends ReplaceRootValue<C>>(
-    expression: T,
-  ): UpdateStageFunction<C, ReplaceRootResolved<C, T>>;
+  <C, const T extends ReplaceRootValue<C>>(expression: T): UpdateStageFunction<C, ReplaceRootResolved<C, T>>;
   <C, const T extends ReplaceRootValue<Simplify<C>>>(
     expression: ($: ExprBuilder<Simplify<C>>) => T,
   ): UpdateStageFunction<C, ReplaceRootResolved<C, T>>;
@@ -815,9 +780,7 @@ export const $set = pushStage(fields => ({ $set: resolveStage(fields) })) as unk
 /** Performs window function calculations across a specified span of documents.
  * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/setWindowFields/ */
 export const $setWindowFields = pushStage(options => ({
-  $setWindowFields: unwrapRet(
-    typeof options === "function" ? options(new WindowBuilder<unknown>()) : options,
-  ),
+  $setWindowFields: unwrapRet(typeof options === "function" ? options(new WindowBuilder<unknown>()) : options),
 })) as unknown as <
   C,
   const T extends {
@@ -827,9 +790,7 @@ export const $setWindowFields = pushStage(options => ({
   },
 >(
   options: ($: WindowBuilder<Simplify<C>>) => WindowFieldsOptions<C, T>,
-) => <TIn>(
-  agg: Agg<TIn, C>,
-) => Agg<TIn, C & { [K in keyof T["output"]]: WindowOperatorResult<C, T["output"][K]> }>;
+) => <TIn>(agg: Agg<TIn, C>) => Agg<TIn, C & { [K in keyof T["output"]]: WindowOperatorResult<C, T["output"][K]> }>;
 
 /** Skips the first N documents.
  * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/skip/ */
@@ -896,9 +857,7 @@ export const $unwind = pushStage(pathOrOptions => ({
   $unwind: resolveStage(pathOrOptions),
 })) as unknown as {
   // Simple string path overload
-  <C, const P extends `$${ArrayRootPath<C>}`>(
-    path: P,
-  ): <TIn>(agg: Agg<TIn, C>) => Agg<TIn, UnwindResult<C, P>>;
+  <C, const P extends `$${ArrayRootPath<C>}`>(path: P): <TIn>(agg: Agg<TIn, C>) => Agg<TIn, UnwindResult<C, P>>;
 
   // Options object overload
   <
@@ -914,8 +873,7 @@ export const $unwind = pushStage(pathOrOptions => ({
     agg: Agg<TIn, C>,
   ) => Agg<
     TIn,
-    UnwindResultWithPreserve<C, P, TPreserve> &
-      (TIndexField extends string ? Record<TIndexField, number> : {})
+    UnwindResultWithPreserve<C, P, TPreserve> & (TIndexField extends string ? Record<TIndexField, number> : {})
   >;
 };
 

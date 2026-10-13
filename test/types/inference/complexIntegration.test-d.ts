@@ -500,9 +500,7 @@ expectType<"free" | "premium" | "enterprise">({} as UserEngagement[number]["tier
 expectType<number>({} as UserEngagement[number]["orderCount"]);
 expectType<number>({} as UserEngagement[number]["totalSpent"]);
 expectType<number>({} as UserEngagement[number]["avgOrderValue"]);
-expectType<"champion" | "loyal" | "active" | "inactive">(
-  {} as UserEngagement[number]["engagementLevel"],
-);
+expectType<"champion" | "loyal" | "active" | "inactive">({} as UserEngagement[number]["engagementLevel"]);
 expectType<"high" | "medium" | "low">({} as UserEngagement[number]["churnRisk"]);
 
 // ============================================

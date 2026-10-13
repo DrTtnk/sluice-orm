@@ -257,9 +257,7 @@ describe("Unwind Runtime Tests", () => {
     });
 
     // 2 - Perform aggregation
-    const results = await dbRegistry(db)
-      .users.aggregate($unwind("$tags"), $unwind("$addresses"))
-      .toList();
+    const results = await dbRegistry(db).users.aggregate($unwind("$tags"), $unwind("$addresses")).toList();
 
     // 3 - Runtime validation & type assertion
     expect(results.length).toBeGreaterThan(0);

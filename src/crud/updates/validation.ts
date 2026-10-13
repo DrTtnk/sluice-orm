@@ -47,8 +47,7 @@ export type ExtractRequiredIdentifiers<UpdateSpec> =
 /**
  * Check if update spec requires arrayFilters
  */
-export type RequiresArrayFilters<UpdateSpec> =
-  ExtractRequiredIdentifiers<UpdateSpec> extends never ? false : true;
+export type RequiresArrayFilters<UpdateSpec> = ExtractRequiredIdentifiers<UpdateSpec> extends never ? false : true;
 
 // ==========================================
 // Update Path Conflict Validation
@@ -93,8 +92,7 @@ export type ValidateArrayFilters<T, UpdateSpec, ArrayFilters> =
         true
       : true // Allow arrayFilters even if not required
     : // Identifiers required
-    ArrayFilters extends undefined ?
-      OpaqueError<`Missing arrayFilters for identifiers: ${RequiredIds}`>
+    ArrayFilters extends undefined ? OpaqueError<`Missing arrayFilters for identifiers: ${RequiredIds}`>
     : ArrayFilters extends readonly object[] ?
       // Check each required identifier exists
       RequiredIds extends string ?

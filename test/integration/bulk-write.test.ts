@@ -83,9 +83,7 @@ describe("BulkWrite Runtime Tests", () => {
     const coll = reg(db).widgets_rep;
 
     const id = new ObjectId();
-    await coll
-      .bulkWrite([{ insertOne: { document: { _id: id, name: "old", count: 0, active: false } } }])
-      .execute();
+    await coll.bulkWrite([{ insertOne: { document: { _id: id, name: "old", count: 0, active: false } } }]).execute();
 
     const result = await coll
       .bulkWrite([

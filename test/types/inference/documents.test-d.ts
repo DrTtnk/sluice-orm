@@ -33,10 +33,7 @@ const complexDocs = $documents([
     active: true,
   },
 ]);
-complexDocs satisfies Agg<
-  unknown,
-  { readonly name: string; readonly age: number; readonly active: boolean }
->;
+complexDocs satisfies Agg<unknown, { readonly name: string; readonly age: number; readonly active: boolean }>;
 
 // Lookup table pattern
 const currencies = $documents([
@@ -56,7 +53,4 @@ const currencies = $documents([
     name: "Pound Sterling",
   },
 ]);
-currencies satisfies Agg<
-  unknown,
-  { readonly code: string; readonly symbol: string; readonly name: string }
->;
+currencies satisfies Agg<unknown, { readonly code: string; readonly symbol: string; readonly name: string }>;

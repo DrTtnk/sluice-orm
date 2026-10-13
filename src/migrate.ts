@@ -50,10 +50,7 @@ export type MigrationOperators<TFrom, TTo> = {
  * // ❌ error — output { _id, name } doesn't match NewUser
  * ```
  */
-export const migrate = <TFrom, TTo>(): MigrationOperators<
-  SimplifyWritable<TFrom>,
-  SimplifyWritable<TTo>
-> => {
+export const migrate = <TFrom, TTo>(): MigrationOperators<SimplifyWritable<TFrom>, SimplifyWritable<TTo>> => {
   const pipe = (
     ...stages: ((agg: Agg<unknown, unknown>) => Agg<unknown, unknown>)[]
   ): TypedPipeline<TFrom, unknown> => {
@@ -69,15 +66,12 @@ export const migrate = <TFrom, TTo>(): MigrationOperators<
     const result = stages.reduce((agg, stage) => stage(agg), fakeAgg as Agg<unknown, unknown>);
     return {
       __pipelineIn: undefined as unknown as TFrom,
-      __pipelineOut: undefined as unknown,
+      __pipelineOut: undefined,
       stages: result.stages,
     };
   };
 
   return {
-    pipe: pipe as unknown as MigrationPipelineBuilder<
-      SimplifyWritable<TFrom>,
-      SimplifyWritable<TTo>
-    >,
+    pipe: pipe as unknown as MigrationPipelineBuilder<SimplifyWritable<TFrom>, SimplifyWritable<TTo>>,
   };
 };

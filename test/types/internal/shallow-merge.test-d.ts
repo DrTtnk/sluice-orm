@@ -26,9 +26,7 @@ import type { Dict, ShallowMergeObjects } from "../../../src/type-utils.js";
 
 // Test 4: Merge with template literal keys
 {
-  type Result = ShallowMergeObjects<
-    [{ [K in `has_tag_${"admin" | "developer"}`]: boolean }, { other: string }]
-  >;
+  type Result = ShallowMergeObjects<[{ [K in `has_tag_${"admin" | "developer"}`]: boolean }, { other: string }]>;
   expectType<Result>(
     {} as {
       has_tag_admin: boolean;
@@ -52,6 +50,7 @@ import type { Dict, ShallowMergeObjects } from "../../../src/type-utils.js";
 {
   type Result = ShallowMergeObjects<[{ a?: number }, { a: string }]>;
   // When merging optional and required, result keeps optional semantics
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
   expectType<Result>({} as { a?: number | string });
 }
 
@@ -59,6 +58,7 @@ import type { Dict, ShallowMergeObjects } from "../../../src/type-utils.js";
 {
   type Result = ShallowMergeObjects<[{ a?: number }, { a?: string }]>;
   // When both are optional, result remains optional with union (exact optional semantics)
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
   expectType<Result>({} as { a?: number | string });
 }
 
@@ -70,9 +70,7 @@ import type { Dict, ShallowMergeObjects } from "../../../src/type-utils.js";
 
 // Test 9: Multiple objects with overlapping keys
 {
-  type Result = ShallowMergeObjects<
-    [{ a: number; b: string }, { a: boolean; c: number }, { a: null; d: Date }]
-  >;
+  type Result = ShallowMergeObjects<[{ a: number; b: string }, { a: boolean; c: number }, { a: null; d: Date }]>;
   expectType<Result>(
     {} as {
       a: number | boolean | null;
@@ -86,6 +84,7 @@ import type { Dict, ShallowMergeObjects } from "../../../src/type-utils.js";
 // Test 10: Empty array should return never or empty object
 {
   type Result = ShallowMergeObjects<[]>;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
   expectType<Result>({} as Dict<never>);
 }
 
@@ -99,11 +98,7 @@ import type { Dict, ShallowMergeObjects } from "../../../src/type-utils.js";
 {
   type ObjectIdString = string & { __brand: "ObjectIdString" };
   type Result = ShallowMergeObjects<
-    [
-      { _id: number },
-      { [K in `has_tag_${"admin" | "developer"}`]: boolean },
-      Record<ObjectIdString, number>,
-    ]
+    [{ _id: number }, { [K in `has_tag_${"admin" | "developer"}`]: boolean }, Record<ObjectIdString, number>]
   >;
 
   const result = {} as Result;
@@ -114,9 +109,7 @@ import type { Dict, ShallowMergeObjects } from "../../../src/type-utils.js";
 
 // Test 13: String literal keys should enable intellisense (string & {})
 {
-  type Result = ShallowMergeObjects<
-    [{ specific_key: number; another_key: string }, { [x: string]: boolean }]
-  >;
+  type Result = ShallowMergeObjects<[{ specific_key: number; another_key: string }, { [x: string]: boolean }]>;
 
   const result = {} as Result;
   // Specific key should merge with index signature

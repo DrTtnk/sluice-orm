@@ -11,16 +11,7 @@
  * - Type narrowing edge cases (mergeObjects, ifNull, filter, etc.)
  */
 import { Schema as S } from "@effect/schema";
-import {
-  $addFields,
-  $facet,
-  $group,
-  $project,
-  $sort,
-  $sortByCount,
-  $unwind,
-  registry,
-} from "@sluice/sluice";
+import { $addFields, $facet, $group, $project, $sort, $sortByCount, $unwind, registry } from "@sluice/sluice";
 import { Db, ObjectId } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -438,10 +429,7 @@ describe("HARDER-CORE: Impossible Grouping and Projection", () => {
           name: "$name",
           scoreMultiplier: $.multiply("$metadata.score", 0.1),
           hasAllFlags: $.allElementsTrue("$metadata.flags"),
-          firstSkillEfficiency: $.divide(
-            $.arrayElemAt("$skills.power", 0),
-            $.arrayElemAt("$skills.cost", 0),
-          ),
+          firstSkillEfficiency: $.divide($.arrayElemAt("$skills.power", 0), $.arrayElemAt("$skills.cost", 0)),
         })),
       )
       .toList();
@@ -616,10 +604,7 @@ describe("HARDER-CORE: mergeObjects and Type Narrowing", () => {
     const results = await mergeRegistry(db)
       .merge.aggregate(
         $project($ => ({
-          nested: $.mergeObjects(
-            $.mergeObjects("$base", "$override"),
-            $.mergeObjects("$extra", { e: 100 }),
-          ),
+          nested: $.mergeObjects($.mergeObjects("$base", "$override"), $.mergeObjects("$extra", { e: 100 })),
         })),
       )
       .toList();

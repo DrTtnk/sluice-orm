@@ -41,18 +41,14 @@ type ReplaceDotNumber<T, With extends string> =
   : T;
 
 export type PathType<T> = ReplaceDotNumber<RawPath<T>, "" | `.${number}`>;
-export type UpdatePathType<T> = ReplaceDotNumber<
-  RawPath<T>,
-  `.${number}` | `.$` | `.$[]` | `.$[${string}]`
->;
+export type UpdatePathType<T> = ReplaceDotNumber<RawPath<T>, `.${number}` | `.$` | `.$[]` | `.$[${string}]`>;
 
 /**
  * Normalize arrayFilters syntax to positional operator
  * Transforms $[] and $[identifier] to $ for type checking
  */
 export type NormalizeArrayFilterPath<T extends string> =
-  T extends `${infer Before}.${infer Rest}` ?
-    `${NormalizeSegment<Before>}.${NormalizeArrayFilterPath<Rest>}`
+  T extends `${infer Before}.${infer Rest}` ? `${NormalizeSegment<Before>}.${NormalizeArrayFilterPath<Rest>}`
   : NormalizeSegment<T>;
 
 type NormalizeSegment<T extends string> =
@@ -97,8 +93,7 @@ type _PathValue<T, P extends string> =
  * Returns `never` for invalid paths.
  */
 export type ResolveValue<T, P extends string> = _PathValue<T, P>;
-export type ResolvePath<T, P extends PathType<T>> =
-  P extends PathType<T> ? ResolveValue<T, P> : never;
+export type ResolvePath<T, P extends PathType<T>> = P extends PathType<T> ? ResolveValue<T, P> : never;
 export type ResolveUpdatePath<T, P extends UpdatePathType<T>> =
   P extends UpdatePathType<T> ? ResolveValue<T, P> : never;
 
@@ -124,10 +119,7 @@ export type BooleanPath<T> = FilteredPath<T, boolean | null | undefined>;
 export type DatePath<T> = FilteredPath<T, Date | null | undefined>;
 export type ArrayPath<T> = FilteredPath<T, readonly unknown[]>;
 export type ObjectPath<T> = FilteredPath<T, Dict<unknown>>;
-export type ComparablePath<T> = FilteredPath<
-  T,
-  number | string | boolean | Date | BSONValue | null | undefined
->;
+export type ComparablePath<T> = FilteredPath<T, number | string | boolean | Date | BSONValue | null | undefined>;
 
 export type UpdateNumericPath<T> = UpdateFilteredPath<T, number | null | undefined>;
 export type UpdateStringPath<T> = UpdateFilteredPath<T, string | null | undefined>;
@@ -151,8 +143,7 @@ export type UpdateObjectPath<T> = UpdateFilteredPath<T, Dict<unknown>>;
  * - Invalid paths (wrong type or doesn't exist) are excluded via `as ... never`
  */
 export type UpdateSpecOfType<T, Target, Value> = {
-  [K in UpdatePathType<T> as ResolveValue<T, K> extends Target ?
-    Extract<ValidPositionalPath<K>, string>
+  [K in UpdatePathType<T> as ResolveValue<T, K> extends Target ? Extract<ValidPositionalPath<K>, string>
   : never]?: Value;
 };
 
@@ -197,8 +188,7 @@ export type ArrayProjectionPath<T> = {
   [K in PathType<T>]: PathValueArrayProjection<T, K> extends readonly unknown[] ? K : never;
 }[PathType<T>];
 
-export type ResolveArrayPath<T, P extends ArrayPath<T>, V = _PathValue<T, P>> =
-  V extends unknown[] ? V : never;
+export type ResolveArrayPath<T, P extends ArrayPath<T>, V = _PathValue<T, P>> = V extends unknown[] ? V : never;
 
 // ============================================
 // Array Element Type Extraction
@@ -209,8 +199,7 @@ export type ResolveArrayPath<T, P extends ArrayPath<T>, V = _PathValue<T, P>> =
  * Uses direct path resolution (ResolvePath).
  * Returns never if the path doesn't resolve to an array
  */
-export type ArrayElementType<T, P extends PathType<T>> =
-  ResolvePath<T, P> extends readonly (infer E)[] ? E : never;
+export type ArrayElementType<T, P extends PathType<T>> = ResolvePath<T, P> extends readonly (infer E)[] ? E : never;
 
 export type UpdateArrayElementType<T, P extends UpdatePathType<T>> =
   ResolveUpdatePath<T, P> extends readonly (infer E)[] ? E : never;

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type -- `{}` is the intentional "no options" default for the O parameters */
 import type {
   BulkWriteResult,
   CollationOptions,
@@ -8,8 +9,6 @@ import type {
   UpdateResult,
 } from "mongodb";
 
-import type { FindResult, ValidateProjectionOptions } from "./projection-types.js";
-import type { ExecutionMode, OperationResult } from "./execution-types.js";
 import type { UpdatePipelineCallback } from "./crud/updates/stages/index.js";
 import type {
   StrictUpdateSpec as UpdateSpec,
@@ -17,6 +16,8 @@ import type {
   ValidateUpdateSpec,
 } from "./crud/updates/types.js";
 import type { ExtractRequiredIdentifiers } from "./crud/updates/validation.js";
+import type { ExecutionMode, OperationResult } from "./execution-types.js";
+import type { FindResult, ValidateProjectionOptions } from "./projection-types.js";
 import type { ExprBuilder, SimplifyWritable, ValidMatchFilterWithBuilder } from "./sluice.js";
 
 export type CrudFilter<C> = ValidMatchFilterWithBuilder<C>;
@@ -187,10 +188,7 @@ export interface CrudCollection<C extends Document, Mode extends ExecutionMode =
     ): FindBuilder<FindResult<C, O>, Mode>;
   };
 
-  findOne: <
-    const R extends NoInfer<ValidMatchFilterWithBuilder<C>>,
-    const O extends FindOptions<C> = {},
-  >(
+  findOne: <const R extends NoInfer<ValidMatchFilterWithBuilder<C>>, const O extends FindOptions<C> = {}>(
     filter?: ($: ExprBuilder<SimplifyWritable<C>>) => R,
     options?: O & ValidateProjectionOptions<O>,
   ) => FindBuilder<FindResult<C, O>, Mode>;
@@ -204,8 +202,7 @@ export interface CrudCollection<C extends Document, Mode extends ExecutionMode =
     const Update extends UpdateSpec<C> | UpdatePipelineCallback<C>,
   >(
     filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
-    update: Update extends UpdatePipelineCallback<C> ? Update
-    : Update & ValidateUpdateSpec<C, Update>,
+    update: Update extends UpdatePipelineCallback<C> ? Update : Update & ValidateUpdateSpec<C, Update>,
     ...options: NoInfer<
       Update extends UpdatePipelineCallback<C> ? []
       : ExtractRequiredIdentifiers<Update> extends never ? [UpdateOpts<C, Update>?]
@@ -219,18 +216,13 @@ export interface CrudCollection<C extends Document, Mode extends ExecutionMode =
     const Update extends UpdateSpec<C> | UpdatePipelineCallback<C>,
   >(
     filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
-    update: Update extends UpdatePipelineCallback<C> ? Update
-    : Update & ValidateUpdateSpec<C, Update>,
+    update: Update extends UpdatePipelineCallback<C> ? Update : Update & ValidateUpdateSpec<C, Update>,
     ...options: NoInfer<
       Update extends UpdatePipelineCallback<C> ? []
       : ExtractRequiredIdentifiers<Update> extends never ? [UpdateOpts<C, Update>?]
       : [UpdateOpts<C, Update>]
     >
-  ) => UpdateManyBuilder<
-    C,
-    Update extends UpdatePipelineCallback<C> ? UpdateSpec<C> : Update,
-    Mode
-  >;
+  ) => UpdateManyBuilder<C, Update extends UpdatePipelineCallback<C> ? UpdateSpec<C> : Update, Mode>;
 
   replaceOne: <const R extends NoInfer<ValidMatchFilterWithBuilder<C>>>(
     filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
@@ -290,8 +282,5 @@ export interface CrudCollection<C extends Document, Mode extends ExecutionMode =
     filter?: ($: ExprBuilder<SimplifyWritable<C>>) => ValidMatchFilterWithBuilder<C>,
   ) => DistinctBuilder<C[K] extends readonly (infer E)[] ? E : C[K], Mode>;
 
-  bulkWrite: (
-    operations: readonly BulkWriteOp<C>[],
-    options?: { ordered?: boolean },
-  ) => BulkWriteBuilder<C, Mode>;
+  bulkWrite: (operations: readonly BulkWriteOp<C>[], options?: { ordered?: boolean }) => BulkWriteBuilder<C, Mode>;
 }

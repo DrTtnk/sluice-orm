@@ -2,32 +2,23 @@ import { Effect } from "effect";
 import type { Db } from "mongodb";
 import { expectType } from "tsd";
 
-import { registry, registryEffect, $group, $match, $project, $set } from "../../../src/index.js";
+import { $group, $match, $project, $set, registry, registryEffect } from "../../../src/index.js";
 
 type User = { _id: string; name: string; age: number; tags: string[]; nickname?: string };
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const schema = { Type: null! as User };
 declare const db: Db;
 const users = registry("8.0", { users: schema })(db).users;
 
-expectType<Promise<Omit<User, "name">[]>>(
-  users.aggregate($project($ => ({ name: $.exclude }))).toList(),
-);
-expectType<Promise<Omit<User, "_id">[]>>(
-  users.aggregate($project($ => ({ _id: $.exclude }))).toList(),
-);
-expectType<Promise<{ name: string }[]>>(
-  users.aggregate($project($ => ({ name: $.include, _id: $.exclude }))).toList(),
-);
+expectType<Promise<Omit<User, "name">[]>>(users.aggregate($project($ => ({ name: $.exclude }))).toList());
+expectType<Promise<Omit<User, "_id">[]>>(users.aggregate($project($ => ({ _id: $.exclude }))).toList());
+expectType<Promise<{ name: string }[]>>(users.aggregate($project($ => ({ name: $.include, _id: $.exclude }))).toList());
 expectType<Promise<string[]>>(users.distinct("tags").execute());
-expectType<Promise<{ name: string }[]>>(
-  users.find(() => ({}), { projection: { name: 1, _id: 0 } }).toList(),
+expectType<Promise<{ name: string }[]>>(users.find(() => ({}), { projection: { name: 1, _id: 0 } }).toList());
+expectType<Promise<Omit<User, "name"> | null>>(users.findOne(() => ({}), { projection: { name: 0 } }).toOne());
+expectType<Promise<{ _id: string; name: string; age: string; tags: string[]; nickname?: string }[]>>(
+  users.aggregate($set($ => ({ age: $.toString("$age") }))).toList(),
 );
-expectType<Promise<Omit<User, "name"> | null>>(
-  users.findOne(() => ({}), { projection: { name: 0 } }).toOne(),
-);
-expectType<
-  Promise<{ _id: string; name: string; age: string; tags: string[]; nickname?: string }[]>
->(users.aggregate($set($ => ({ age: $.toString("$age") }))).toList());
 expectType<Promise<{ _id: null; count: number }[]>>(
   users
     .aggregate($match(() => ({})))
@@ -64,12 +55,9 @@ users.find(() => ({}), { projection: { name: 0, age: 1 } });
 
 Effect.gen(function* () {
   const r = yield* registryEffect("8.0", { users: schema });
-  expectType<
-    Effect.Effect<
-      { _id: null; count: number }[],
-      import("../../../src/registryEffect.js").MongoError
-    >
-  >(r.users.aggregate($group($ => ({ _id: null, count: $.sum(1) }))).toList());
+  expectType<Effect.Effect<{ _id: null; count: number }[], import("../../../src/registryEffect.js").MongoError>>(
+    r.users.aggregate($group($ => ({ _id: null, count: $.sum(1) }))).toList(),
+  );
   const grouped = yield* r.users
     .aggregate($match(() => ({})))
     .pipe($group($ => ({ _id: null, count: $.sum(1) })))
@@ -102,29 +90,17 @@ expectType<Promise<{ name: string } | null>>(
 );
 expectType<Promise<{ name: string } | null>>(
   users
-    .findOneAndReplace(
-      () => ({}),
-      { _id: "u1", name: "Alice", age: 30, tags: [] },
-      { projection: { name: 1, _id: 0 } },
-    )
+    .findOneAndReplace(() => ({}), { _id: "u1", name: "Alice", age: 30, tags: [] }, { projection: { name: 1, _id: 0 } })
     .execute(),
 );
 expectType<Promise<{ name: string } | null>>(
   users
-    .findOneAndUpdate(
-      () => ({}),
-      { $inc: { age: 1 } },
-      { projection: { name: 1, _id: 0 }, returnDocument: "after" },
-    )
+    .findOneAndUpdate(() => ({}), { $inc: { age: 1 } }, { projection: { name: 1, _id: 0 }, returnDocument: "after" })
     .execute(),
 );
 
-expectType<Promise<Omit<User, "name">[]>>(
-  users.aggregate($project(() => ({ name: 0, _id: 1 }))).toList(),
-);
-expectType<Promise<Omit<User, "name">[]>>(
-  users.find(() => ({}), { projection: { name: 0, _id: 1 } }).toList(),
-);
+expectType<Promise<Omit<User, "name">[]>>(users.aggregate($project(() => ({ name: 0, _id: 1 }))).toList());
+expectType<Promise<Omit<User, "name">[]>>(users.find(() => ({}), { projection: { name: 0, _id: 1 } }).toList());
 expectType<Promise<{ _id: number }[]>>(users.aggregate($project($ => ({ _id: "$age" }))).toList());
 declare const dynamicOptions: import("../../../src/crud.js").FindOptions<User>;
 expectType<Promise<Partial<User>[]>>(users.find(() => ({}), dynamicOptions).toList());

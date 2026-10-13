@@ -205,9 +205,7 @@ describe("ReplaceRoot Runtime Tests", () => {
 
     // 2 - Perform aggregation
     const results = await dbRegistry(db)
-      .contacts.aggregate(
-        $replaceRoot($ => ({ newRoot: { full_name: $.concat("$first_name", " ", "$last_name") } })),
-      )
+      .contacts.aggregate($replaceRoot($ => ({ newRoot: { full_name: $.concat("$first_name", " ", "$last_name") } })))
       .toList();
 
     expect(results.length).toBeGreaterThan(0);
@@ -243,6 +241,6 @@ describe("ReplaceRoot Runtime Tests", () => {
 
     expect(results.length).toBeGreaterThan(0);
     assertSync(S.Array(ResultSchema), results);
-    expectType<typeof ResultSchema.Type>({} as (typeof results)[number]);
+    expectType<typeof ResultSchema.Type>({});
   });
 });

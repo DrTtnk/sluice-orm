@@ -91,11 +91,7 @@ const NotificationTargetPush = S.Struct({
   platform: S.Literal("ios", "android"),
 });
 
-const NotificationTarget = S.Union(
-  NotificationTargetEmail,
-  NotificationTargetSMS,
-  NotificationTargetPush,
-);
+const NotificationTarget = S.Union(NotificationTargetEmail, NotificationTargetSMS, NotificationTargetPush);
 
 const NotificationSchema = S.Struct({
   _id: ObjectIdSchema,

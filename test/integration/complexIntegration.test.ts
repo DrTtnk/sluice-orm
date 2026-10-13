@@ -1,16 +1,6 @@
 // Runtime equivalent of complexIntegration.test-d.ts
 import { Schema as S } from "@effect/schema";
-import {
-  $addFields,
-  $count,
-  $facet,
-  $graphLookup,
-  $group,
-  $lookup,
-  $project,
-  $unwind,
-  registry,
-} from "@sluice/sluice";
+import { $addFields, $count, $facet, $graphLookup, $group, $lookup, $project, $unwind, registry } from "@sluice/sluice";
 import { Db, ObjectId } from "mongodb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -342,9 +332,7 @@ describe("Complex Integration Runtime", () => {
     // Assertions
     expect(results).toHaveLength(2);
 
-    const p1 = results.find(
-      r => r._id.toString() === new ObjectId("000000000000000000000008").toString(),
-    );
+    const p1 = results.find(r => r._id.toString() === new ObjectId("000000000000000000000008").toString());
     expect(p1?.product.name).toBe("MacBook Pro");
     expect(p1?.product.categoryName).toBe("Laptops");
     // Ancestors of Laptops(c3) are Computers(c2) and Electronics(c1).

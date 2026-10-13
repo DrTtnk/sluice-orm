@@ -12,15 +12,9 @@ export class MongoError extends Data.TaggedError("MongoError")<{
   readonly message: string;
 }> {}
 
-export class MongoDbClient extends Context.Tag("MongoDbClient")<
-  MongoDbClient,
-  { readonly db: Db }
->() {}
+export class MongoDbClient extends Context.Tag("MongoDbClient")<MongoDbClient, { readonly db: Db }>() {}
 
-const wrapMongoOperation = <T>(
-  operation: string,
-  fn: () => Promise<T>,
-): Effect.Effect<T, MongoError> =>
+const wrapMongoOperation = <T>(operation: string, fn: () => Promise<T>): Effect.Effect<T, MongoError> =>
   Effect.tryPromise({
     try: fn,
     catch: cause =>
@@ -32,10 +26,7 @@ const wrapMongoOperation = <T>(
   });
 
 export type CrudCollectionEffect<T extends Document = Document> = CrudCollection<T, "effect">;
-export type BoundCollectionEffect<TName extends string, TSchema extends Dict<unknown>> = Collection<
-  TName,
-  TSchema
-> & {
+export type BoundCollectionEffect<TName extends string, TSchema extends Dict<unknown>> = Collection<TName, TSchema> & {
   aggregate: AggregateBuilder<SimplifyWritable<TSchema>, "effect">;
 } & CrudCollectionEffect<SimplifyWritable<TSchema>>;
 
@@ -45,17 +36,13 @@ const adaptBuilder = (builder: object, operation: string): object =>
     Object.entries(builder).map(([key, value]) => {
       if (typeof value !== "function") return [key, value];
       const invoke = value as (...args: unknown[]) => unknown;
-      if (key === "pipe")
-        return [key, (...args: unknown[]) => adaptBuilder(invoke(...args) as object, operation)];
+      if (key === "pipe") return [key, (...args: unknown[]) => adaptBuilder(invoke(...args) as object, operation)];
       if (key === "execute" || key === "toList" || key === "toOne") {
         const label = operation === "aggregate" ? operation : `${operation}.${key}`;
         return [
           key,
           (...args: unknown[]) =>
-            wrapMongoOperation(
-              key === "execute" ? operation : label,
-              () => invoke(...args) as Promise<unknown>,
-            ),
+            wrapMongoOperation(key === "execute" ? operation : label, () => invoke(...args) as Promise<unknown>),
         ];
       }
       return [key, value];
@@ -87,14 +74,9 @@ export const registryEffect = <const TMap extends Dict<SchemaLike>>(
     return Object.fromEntries(
       Object.entries(schemas).map(([name, schema]) => [
         name,
-        collectionEffect(
-          name,
-          schema,
-          db.collection<SimplifyWritable<InferSchema<typeof schema>>>(name),
-        ),
+        collectionEffect(name, schema, db.collection<SimplifyWritable<InferSchema<typeof schema>>>(name)),
       ]),
     ) as unknown as { [K in keyof TMap]: BoundCollectionEffect<K & string, InferSchema<TMap[K]>> };
   });
 
-export const makeMongoDbClientLayer = (db: Db): Layer.Layer<MongoDbClient> =>
-  Layer.succeed(MongoDbClient, { db });
+export const makeMongoDbClientLayer = (db: Db): Layer.Layer<MongoDbClient> => Layer.succeed(MongoDbClient, { db });

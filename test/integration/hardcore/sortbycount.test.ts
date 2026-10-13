@@ -38,9 +38,7 @@ describe("Hardcore: $sortByCount with union field", () => {
       .toArray();
 
     // 5. Execute Sluice Query
-    const sluiceResults = await monster(db)
-      .monsters.aggregate($sortByCount("$items.quantity"))
-      .toList();
+    const sluiceResults = await monster(db).monsters.aggregate($sortByCount("$items.quantity")).toList();
 
     // 6. Validate Type
     assertSync(ResultSchema, sluiceResults);

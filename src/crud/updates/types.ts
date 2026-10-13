@@ -6,7 +6,7 @@
 
 import type { Simplify, UnionToTuple, ValueOf } from "type-fest";
 
-import type { PathType, ResolvePath, ResolveValue, UpdatePathType } from "../../paths.js";
+import type { PathType, ResolvePath, ResolveValue } from "../../paths.js";
 import type { OpaqueError } from "../../type-errors.js";
 import type { Dict } from "../../type-utils.js";
 import type {
@@ -24,11 +24,7 @@ import type {
   SetSpec,
   UnsetSpec,
 } from "./operators.js";
-import type {
-  ExtractRequiredIdentifiers,
-  RequiresArrayFilters,
-  ValidatePathConflicts,
-} from "./validation.js";
+import type { ExtractRequiredIdentifiers, RequiresArrayFilters, ValidatePathConflicts } from "./validation.js";
 
 // Re-export for backward compatibility
 export type { RequiresArrayFilters };
@@ -118,8 +114,7 @@ type ValidIdentifier<T extends string> = T extends "" ? T : MatchAlphanumeric<T>
 type UnionToIntersection<U> =
   (U extends unknown ? (value: U) => void : never) extends (value: infer I) => void ? I : never;
 
-type ArrayIndexPath<Elem> =
-  Elem extends readonly (infer E)[] ? `${number}` | `${number}.${PathType<E>}` : never;
+type ArrayIndexPath<Elem> = Elem extends readonly (infer E)[] ? `${number}` | `${number}.${PathType<E>}` : never;
 
 type ArrayFilterKey<Elem, Id extends string> =
   Elem extends Dict<unknown> ? Id | `${Id}.${PathType<Elem>}`
@@ -161,11 +156,7 @@ type ArrayFilterSpecForId<Elem, Id extends string> = {
  * e.g., "tags.$[i]" => { i: "tags.$[i]" }
  *       "items.$[i].$[j]" => { i: "items.$[i]", j: "items.$[i].$[j]" }
  */
-type ExtractArrayFilterIdPaths<
-  P extends string,
-  Prefix extends string = "",
-  Acc extends Dict<string> = {},
-> =
+type ExtractArrayFilterIdPaths<P extends string, Prefix extends string = "", Acc extends Dict<string> = {}> =
   P extends `${infer Before}.$[${infer Id}]${infer After}` ?
     Id extends "" ?
       ExtractArrayFilterIdPaths<After, `${Prefix}${Before}.$[]`, Acc>
@@ -204,10 +195,7 @@ type ArrayFilterTypes<C, P extends string> = Simplify<
 /**
  * Infer array filter types from update spec
  */
-export type InferArrayFilters<T, Spec extends object> = ArrayFilterTypes<
-  T,
-  ExtractPathsFromUpdateSpec<T, Spec>
->;
+export type InferArrayFilters<T, Spec extends object> = ArrayFilterTypes<T, ExtractPathsFromUpdateSpec<T, Spec>>;
 
 /**
  * Required array filters when positional operators are used
@@ -218,9 +206,7 @@ type RequiredArrayFilters<T, Spec extends object> =
       arrayFilters: InferArrayFilters<T, Spec> extends infer AF extends Dict<unknown> ?
         keyof AF extends never ?
           never
-        : readonly Partial<
-            { [Id in keyof AF]: ArrayFilterSpecForId<AF[Id], Id & string> }[keyof AF]
-          >[]
+        : readonly Partial<{ [Id in keyof AF]: ArrayFilterSpecForId<AF[Id], Id & string> }[keyof AF]>[]
       : never;
     };
 
@@ -230,5 +216,4 @@ type RequiredArrayFilters<T, Spec extends object> =
 export type UpdateOptions<T, Spec extends object> = {
   upsert?: boolean;
   hint?: string | Dict<1 | -1>;
-} & (string extends keyof T ? { arrayFilters?: readonly Dict<unknown>[] }
-: RequiredArrayFilters<T, Spec>);
+} & (string extends keyof T ? { arrayFilters?: readonly Dict<unknown>[] } : RequiredArrayFilters<T, Spec>);

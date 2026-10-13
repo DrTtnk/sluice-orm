@@ -59,20 +59,14 @@ type MongoVersions = ["4.2", "4.4", "5.0", "5.1", "6.0", "6.1", "7.0", "7.1", "8
  * Collection type that carries both name and schema information
  * Used for type-safe collection references in $lookup, $unionWith, etc.
  */
-export type Collection<
-  TName extends string = string,
-  TSchema extends Dict<unknown> = Dict<unknown>,
-> = {
+export type Collection<TName extends string = string, TSchema extends Dict<unknown> = Dict<unknown>> = {
   readonly __collectionName: TName;
   readonly __collectionType: SimplifyWritable<TSchema>;
 };
 
 export type CollectionType<T extends Collection> = T["__collectionType"];
 
-export type BoundCollection<TName extends string, TSchema extends Dict<unknown>> = Collection<
-  TName,
-  TSchema
-> & {
+export type BoundCollection<TName extends string, TSchema extends Dict<unknown>> = Collection<TName, TSchema> & {
   aggregate: AggregateBuilder<SimplifyWritable<TSchema>>;
   rawCollection: MongoCollection<SimplifyWritable<TSchema>>;
 } & CrudCollection<SimplifyWritable<TSchema>>;
@@ -111,10 +105,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
       },
       toOne: async () => {
         const filter = filterFn ? extractFilter(filterFn) : {};
-        return mongoCol.findOne(
-          filter as Filter<T>,
-          options as FindOneOptions,
-        ) as unknown as Promise<T | null>;
+        return mongoCol.findOne(filter as Filter<T>, options as FindOneOptions) as unknown as Promise<T | null>;
       },
     })) as CrudCollection<T>["find"],
 
@@ -122,15 +113,12 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
       _filter: filterFn ? extractFilter(filterFn) : undefined,
       _options: options,
       toList: async () => {
-        const doc = await mongoCol.findOne(
-          filterFn ? extractFilter(filterFn) : ({}),
-          options as FindOneOptions,
-        );
+        const doc = await mongoCol.findOne(filterFn ? extractFilter(filterFn) : {}, options as FindOneOptions);
         return doc ? [doc as T] : [];
       },
       toOne: () =>
         mongoCol.findOne(
-          filterFn ? extractFilter(filterFn) : ({}),
+          filterFn ? extractFilter(filterFn) : {},
           options as FindOneOptions,
         ) as unknown as Promise<T | null>,
     })) as CrudCollection<T>["findOne"],
@@ -191,12 +179,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
       _filter: extractFilter(filterFn),
       _replacement: replacement,
       _options: options,
-      execute: () =>
-        mongoCol.replaceOne(
-          extractFilter(filterFn),
-          replacement,
-          options as ReplaceOptions,
-        ),
+      execute: () => mongoCol.replaceOne(extractFilter(filterFn), replacement, options as ReplaceOptions),
     })) as CrudCollection<T>["replaceOne"],
 
     deleteOne: ((filterFn: unknown) => ({
@@ -223,9 +206,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
     ) => ({
       _filter: extractFilter(filterFn),
       execute: () =>
-        mongoCol
-          .findOneAndDelete(extractFilter(filterFn), options as FindOneAndDeleteOptions)
-          .then(r => r as T | null),
+        mongoCol.findOneAndDelete(extractFilter(filterFn), options as FindOneAndDeleteOptions).then(r => r as T | null),
     })) as CrudCollection<T>["findOneAndDelete"],
 
     findOneAndReplace: ((
@@ -246,11 +227,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
       _replacement: replacement,
       execute: () =>
         mongoCol
-          .findOneAndReplace(
-            extractFilter(filterFn),
-            replacement as never,
-            options as FindOneAndReplaceOptions,
-          )
+          .findOneAndReplace(extractFilter(filterFn), replacement as never, options as FindOneAndReplaceOptions)
           .then(r => r as T | null),
     })) as CrudCollection<T>["findOneAndReplace"],
 
@@ -273,15 +250,11 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
       _update: updateArg,
       execute: () =>
         mongoCol
-          .findOneAndUpdate(
-            extractFilter(filterFn),
-            updateArg as Document,
-            options as FindOneAndUpdateOptions,
-          )
+          .findOneAndUpdate(extractFilter(filterFn), updateArg as Document, options as FindOneAndUpdateOptions)
           .then(r => r as T | null),
     })) as CrudCollection<T>["findOneAndUpdate"],
 
-    countDocuments: ((
+    countDocuments: (
       filterFn?: unknown,
       options?: {
         limit?: number;
@@ -292,26 +265,20 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
         comment?: string;
       },
     ) => ({
-      execute: () =>
-        mongoCol.countDocuments(
-          filterFn ? extractFilter(filterFn) : {},
-          options as CountDocumentsOptions,
-        ),
-    })),
+      execute: () => mongoCol.countDocuments(filterFn ? extractFilter(filterFn) : {}, options as CountDocumentsOptions),
+    }),
 
     estimatedDocumentCount: () => ({
       execute: () => mongoCol.estimatedDocumentCount(),
     }),
 
     distinct: ((field: string, filterFn?: unknown) => ({
-      execute: () =>
-        mongoCol.distinct(field, filterFn ? extractFilter(filterFn) : ({})),
+      execute: () => mongoCol.distinct(field, filterFn ? extractFilter(filterFn) : {}),
     })) as CrudCollection<T>["distinct"],
 
     bulkWrite: ((operations: readonly unknown[], options?: { ordered?: boolean }) => ({
       _operations: operations,
-      execute: () =>
-        mongoCol.bulkWrite(operations as AnyBulkWriteOperation<T>[], options),
+      execute: () => mongoCol.bulkWrite(operations as AnyBulkWriteOperation<T>[], options),
     })) as unknown as CrudCollection<T>["bulkWrite"],
   };
 }
@@ -399,17 +366,12 @@ export const registry =
     options?: { prefix?: string; resolveCollectionName?: (key: string) => string },
   ) =>
   (client: Db): { [K in keyof TMap]: BoundCollection<K & string, InferSchema<TMap[K]>> } => {
-    const resolve =
-      options?.resolveCollectionName ?? ((key: string) => `${options?.prefix ?? ""}${key}`);
+    const resolve = options?.resolveCollectionName ?? ((key: string) => `${options?.prefix ?? ""}${key}`);
     const bind = <TName extends string, TSchema extends SchemaLike>(
       name: TName,
       schema: TSchema,
     ): BoundCollection<TName, InferSchema<TSchema>> =>
-      collection(
-        name,
-        schema,
-        client.collection<SimplifyWritable<InferSchema<TSchema>>>(resolve(name)),
-      );
+      collection(name, schema, client.collection<SimplifyWritable<InferSchema<TSchema>>>(resolve(name)));
 
     return Object.fromEntries(
       Object.entries(schemas).map(([name, schema]) => [name, bind(name, schema)]),

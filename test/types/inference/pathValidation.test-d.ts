@@ -175,18 +175,10 @@ expectType<never>({} as ExtraUpdatePaths);
   expectType<User["matrixMetadata"][0][0][0]>({} as ResolveUser<"matrixMetadata.$[elem].0.0">);
   expectType<User["matrixMetadata"][0][0][0]>({} as ResolveUser<"matrixMetadata.$[elem].$.0">);
   expectType<User["matrixMetadata"][0][0][0]>({} as ResolveUser<"matrixMetadata.$[elem].$.$">);
-  expectType<User["matrixMetadata"][0][0][0]>(
-    {} as ResolveUser<"matrixMetadata.$[elem].$.$[elem]">,
-  );
-  expectType<User["matrixMetadata"][0][0][0]>(
-    {} as ResolveUser<"matrixMetadata.$[elem].$[elem].0">,
-  );
-  expectType<User["matrixMetadata"][0][0][0]>(
-    {} as ResolveUser<"matrixMetadata.$[elem].$[elem].$">,
-  );
-  expectType<User["matrixMetadata"][0][0][0]>(
-    {} as ResolveUser<"matrixMetadata.$[elem].$[elem].$[elem]">,
-  );
+  expectType<User["matrixMetadata"][0][0][0]>({} as ResolveUser<"matrixMetadata.$[elem].$.$[elem]">);
+  expectType<User["matrixMetadata"][0][0][0]>({} as ResolveUser<"matrixMetadata.$[elem].$[elem].0">);
+  expectType<User["matrixMetadata"][0][0][0]>({} as ResolveUser<"matrixMetadata.$[elem].$[elem].$">);
+  expectType<User["matrixMetadata"][0][0][0]>({} as ResolveUser<"matrixMetadata.$[elem].$[elem].$[elem]">);
   expectType<number>({} as ResolveUser<"matrixMetadata.0.0.0.cell">);
   expectType<number>({} as ResolveUser<"matrixMetadata.$.0.0.cell">);
   expectType<number>({} as ResolveUser<"matrixMetadata.$.$.0.cell">);
@@ -204,8 +196,7 @@ expectType<never>({} as ExtraUpdatePaths);
   expectType<never>({} as ResolveUser<"orders.orderId">);
 }
 
-type JoinPath<Prefix extends string, Segment extends string> =
-  Prefix extends "" ? Segment : `${Prefix}.${Segment}`;
+type JoinPath<Prefix extends string, Segment extends string> = Prefix extends "" ? Segment : `${Prefix}.${Segment}`;
 
 type Alpha<T extends string> = Lowercase<T> extends Uppercase<T> ? never : T;
 type Digit<T extends string> = T extends `${0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}` ? T : never;
@@ -250,12 +241,7 @@ type MergeFilters<A, B> =
 
 type ArrayFilterMap<T, P extends string, Prefix extends string = "", Acc = {}> =
   P extends `${infer Head}.${infer Rest}` ?
-    ArrayFilterMap<
-      T,
-      Rest,
-      JoinPath<Prefix, Head>,
-      MergeFilters<Acc, AddArrayFilter<T, JoinPath<Prefix, Head>, Head>>
-    >
+    ArrayFilterMap<T, Rest, JoinPath<Prefix, Head>, MergeFilters<Acc, AddArrayFilter<T, JoinPath<Prefix, Head>, Head>>>
   : MergeFilters<Acc, AddArrayFilter<T, JoinPath<Prefix, P>, P>>;
 
 type InvalidPositional<P extends string> = P extends `${string}.$` ? P : never;
@@ -292,17 +278,13 @@ expectType<UpdatePathFilters<"orders.$[ord].total">>({} as { ord: User["orders"]
 expectType<UpdatePathFilters<"orders.0.items.$[item]">>({} as { item: string });
 
 // Using double Filtered Positional
-expectType<UpdatePathFilters<"orders.$[ord].items.$[item]">>(
-  {} as { ord: User["orders"][number]; item: string },
-);
+expectType<UpdatePathFilters<"orders.$[ord].items.$[item]">>({} as { ord: User["orders"][number]; item: string });
 
 // --- 5. The Matrix (Level 1 Filter) ---
 expectType<UpdatePathFilters<"matrixMetadata.$[l1]">>({} as { l1: User["matrixMetadata"][number] });
 
 // --- 6. The Matrix (Level 2 Filter) ---
-expectType<UpdatePathFilters<"matrixMetadata.0.$[l2]">>(
-  {} as { l2: User["matrixMetadata"][number][number] },
-);
+expectType<UpdatePathFilters<"matrixMetadata.0.$[l2]">>({} as { l2: User["matrixMetadata"][number][number] });
 
 // --- 7. The Matrix (Level 3 Filter) ---
 expectType<UpdatePathFilters<"matrixMetadata.0.0.$[l3]">>({} as { l3: { cell: number } });
@@ -379,9 +361,7 @@ expectType<UpdatePathFilters<"orders.$[ord].items.0">>({} as { ord: User["orders
 expectType<never>({} as UpdatePathOf<"orders.$[ord].items.$[item].$[sub]">);
 
 // --- 22. Filter + numeric indices on matrix with leaf access ---
-expectType<UpdatePathFilters<"matrixMetadata.$[l1].0.0.cell">>(
-  {} as { l1: User["matrixMetadata"][number] },
-);
+expectType<UpdatePathFilters<"matrixMetadata.$[l1].0.0.cell">>({} as { l1: User["matrixMetadata"][number] });
 
 // --- 23. Filter on primitive array element (invalid) ---
 expectType<never>({} as UpdatePathOf<"tags.$[t].$[u]">);

@@ -960,10 +960,7 @@ describe("Hardcore Runtime & Type Tests", () => {
                     $getField: {
                       field: "rows",
                       input: {
-                        $arrayElemAt: [
-                          { $arrayElemAt: [{ $arrayElemAt: ["$matrixMetadata", 0] }, 0] },
-                          0,
-                        ],
+                        $arrayElemAt: [{ $arrayElemAt: [{ $arrayElemAt: ["$matrixMetadata", 0] }, 0] }, 0],
                       },
                     },
                   },

@@ -11,11 +11,7 @@ import type { ShallowMergeObjectsOverride } from "../../../src/type-utils.js";
 // Last-wins with multiple objects
 {
   type Result = ShallowMergeObjectsOverride<
-    [
-      { a: number; b: string },
-      { a: boolean; c: number; f?: number },
-      { a: null; d: Date; f: number },
-    ]
+    [{ a: number; b: string }, { a: boolean; c: number; f?: number }, { a: null; d: Date; f: number }]
   >;
   expectType<Result>({} as { a: null; b: string; c: number; d: Date; f: number });
 }

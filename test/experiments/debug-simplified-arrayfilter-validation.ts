@@ -9,8 +9,7 @@
 
 // Reuse the string transformation from previous debug file
 type ReplaceArrayFilters<T extends string> =
-  T extends `${infer Before}$[${string}]${infer After}` ? `${Before}$${ReplaceArrayFilters<After>}`
-  : T;
+  T extends `${infer Before}$[${string}]${infer After}` ? `${Before}$${ReplaceArrayFilters<After>}` : T;
 
 // Test interface
 type TestDoc = {

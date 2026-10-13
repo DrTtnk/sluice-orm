@@ -446,9 +446,7 @@ describe("Date Operators Runtime Tests", () => {
     });
 
     const results = await dbRegistry(db)
-      .events.aggregate(
-        $addFields($ => ({ parsed: $.dateFromString({ dateString: "$isoDateString" }) })),
-      )
+      .events.aggregate($addFields($ => ({ parsed: $.dateFromString({ dateString: "$isoDateString" }) })))
       .toList();
 
     assertSync(S.Array(ResultSchema), results);

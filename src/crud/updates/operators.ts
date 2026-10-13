@@ -31,10 +31,7 @@ export type AllPaths<T> = UpdatePathType<T> | ArrayRootPath<T>;
 type ValidPath<T, P extends AllPaths<T>> = P extends string ? ValidPositionalPath<P> : P;
 
 export type SetSpec<T> = {
-  [P in AllPaths<T> as Extract<ValidPath<T, P>, string>]?: ValueOrExpr<
-    T,
-    AllowEmptyArray<ResolveValue<T, P>>
-  >;
+  [P in AllPaths<T> as Extract<ValidPath<T, P>, string>]?: ValueOrExpr<T, AllowEmptyArray<ResolveValue<T, P>>>;
 };
 
 export type UnsetSpec<T> = {
@@ -45,17 +42,15 @@ export type IncSpec<T> = UpdateSpecOfType<T, number | Nil, ValueOrExpr<T, number
 export type MulSpec<T> = UpdateSpecOfType<T, number | Nil, ValueOrExpr<T, number>>;
 
 export type MinMaxSpec<T> = {
-  [P in UpdatePathType<T> as ResolveValue<T, P> extends string | number | Date ? P
-  : never]?: ValueOrExpr<T, ResolveUpdatePath<T, P>>;
+  [P in UpdatePathType<T> as ResolveValue<T, P> extends string | number | Date ? P : never]?: ValueOrExpr<
+    T,
+    ResolveUpdatePath<T, P>
+  >;
 };
 
 export type RenameSpec<T> = { [P in AllPaths<T>]?: string };
 
-export type CurrentDateSpec<T> = UpdateSpecOfType<
-  T,
-  Date | Nil,
-  true | { $type: "date" | "timestamp" }
->;
+export type CurrentDateSpec<T> = UpdateSpecOfType<T, Date | Nil, true | { $type: "date" | "timestamp" }>;
 
 type PushModifiers<C, Elem> = {
   $each: readonly ValueOrExpr<C, Elem>[];
@@ -106,8 +101,7 @@ export type PullSpec<T> = {
   [P in UpdateArrayPath<T>]?:
     | ValueOrExpr<T, UpdateArrayElementType<T, P>>
     | PullMatch<T, UpdateArrayElementType<T, P>>
-    | (UpdateArrayElementType<T, P> extends object ? PullCondition<T, UpdateArrayElementType<T, P>>
-      : never);
+    | (UpdateArrayElementType<T, P> extends object ? PullCondition<T, UpdateArrayElementType<T, P>> : never);
 };
 
 export type PopSpec<T> = { [P in UpdateArrayPath<T>]?: 1 | -1 };

@@ -642,9 +642,7 @@ describe("Documentation Examples — Type & Runtime Validation", () => {
         })
         .execute();
 
-      await bound.users
-        .updateOne($ => ({ _id: id }), { $set: { name: "Updated" }, $inc: { age: 1 } })
-        .execute();
+      await bound.users.updateOne($ => ({ _id: id }), { $set: { name: "Updated" }, $inc: { age: 1 } }).execute();
 
       await bound.users.deleteOne($ => ({ _id: id })).execute();
     });
@@ -846,9 +844,7 @@ describe("Documentation Examples — Type & Runtime Validation", () => {
         )
         .toList();
 
-      expectType<{ userId: string; totalSpent: number; orderCount: number; avgOrder: number }[]>(
-        report,
-      );
+      expectType<{ userId: string; totalSpent: number; orderCount: number; avgOrder: number }[]>(report);
     });
   });
 });

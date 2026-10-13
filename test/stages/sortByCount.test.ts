@@ -98,9 +98,7 @@ describe("SortByCount Runtime Tests", () => {
       count: S.Number,
     });
 
-    const results = await dbRegistry(db)
-      .exhibits.aggregate($unwind("$tags"), $sortByCount("$tags"))
-      .toList();
+    const results = await dbRegistry(db).exhibits.aggregate($unwind("$tags"), $sortByCount("$tags")).toList();
 
     expect(results.length).toBeGreaterThan(0);
     assertSync(S.Array(ResultSchema), results);

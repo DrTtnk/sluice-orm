@@ -356,12 +356,7 @@ describe("Expression Operators Runtime Tests", () => {
     const ResultSchema = S.Struct({
       _id: ObjectIdSchema,
       conditional: S.Union(S.Literal("adult"), S.Literal("minor")),
-      switched: S.Union(
-        S.Literal("child"),
-        S.Literal("teenager"),
-        S.Literal("adult"),
-        S.Literal("senior"),
-      ),
+      switched: S.Union(S.Literal("child"), S.Literal("teenager"), S.Literal("adult"), S.Literal("senior")),
       ifNull: S.String,
     });
 

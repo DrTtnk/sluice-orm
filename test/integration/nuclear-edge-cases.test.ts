@@ -165,9 +165,7 @@ describe("Nuclear Edge Cases & Paranoid Checks", () => {
 
       await op.execute();
 
-      const doc = await monsters
-        .findOne($ => ({ _id: new ObjectId("000000000000000000000001") }))
-        .toOne();
+      const doc = await monsters.findOne($ => ({ _id: new ObjectId("000000000000000000000001") })).toOne();
       // If it was unset, name would be undefined.
       // We want to verify behavior. Ideally we want this to be IMPOSSIBLE.
       // But if we forced it...
@@ -187,9 +185,7 @@ describe("Nuclear Edge Cases & Paranoid Checks", () => {
         })
         .execute();
 
-      const doc = await monsters
-        .findOne($ => ({ _id: new ObjectId("000000000000000000000001") }))
-        .toOne();
+      const doc = await monsters.findOne($ => ({ _id: new ObjectId("000000000000000000000001") })).toOne();
       expect(doc?.deletedAt).toBeUndefined(); // Or null? $unset removes the field entirely.
     });
   });

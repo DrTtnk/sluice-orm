@@ -62,13 +62,7 @@ export type Geometry =
 // ==========================================
 
 // Re-export Collection types from registry
-export type {
-  BoundCollection,
-  Collection,
-  CollectionType,
-  InferSchema,
-  SchemaLike,
-} from "./registry.js";
+export type { BoundCollection, Collection, CollectionType, InferSchema, SchemaLike } from "./registry.js";
 export { collection, registry } from "./registry.js";
 
 // Type alias for extracting document type from Collection
@@ -81,13 +75,7 @@ export type ForeignType<T extends CollectionT> = T["__collectionType"];
 // Field reference types - reexport from paths.ts (battle-tested utilities)
 // These are STRICT: only valid paths when context is known
 // When path computation fails (C is any/unknown), these resolve to never
-export type {
-  ArrayFieldRef,
-  BooleanFieldRef,
-  DateFieldRef,
-  NumericFieldRef,
-  StringFieldRef,
-} from "./paths.js";
+export type { ArrayFieldRef, BooleanFieldRef, DateFieldRef, NumericFieldRef, StringFieldRef } from "./paths.js";
 
 // Paths that resolve to arrays of a specific type (for MongoDB array projection semantics)
 // E.g., items.quantity on { items: { quantity: number }[] } resolves to number[]
@@ -100,8 +88,7 @@ export type NumericArrayFieldRef<T> = `$${NumericArrayPath<T>}`;
 // Generic field ref for any field in context
 // Smart field ref - allows any $field when context is any, otherwise strict
 // This handles TypeScript inference failures gracefully without being lenient by default
-type SmartFieldRef<C, StrictRef> =
-  [StrictRef] extends [never] ? OpaqueError<"Invalid field reference"> : StrictRef;
+type SmartFieldRef<C, StrictRef> = [StrictRef] extends [never] ? OpaqueError<"Invalid field reference"> : StrictRef;
 
 type SmartNumericFieldRef<C> = SmartFieldRef<C, NumericFieldRef<C> | NumericArrayFieldRef<C>>;
 export type SmartAnyPathFieldRef<C> = SmartFieldRef<C, `$${PathType<C>}`>;
@@ -199,8 +186,7 @@ type ResolveSpecValue<C, V> =
   : V extends (c: any) => infer R ? R
   : V extends `$${string}` ? ResolveType<C, V>
   : V extends { [key: `$${string}`]: any } ?
-    OpaqueError<"Invalid MongoDB operator object - use builder API instead (e.g., $.sum(...))"> &
-      never
+    OpaqueError<"Invalid MongoDB operator object - use builder API instead (e.g., $.sum(...))"> & never
   : V extends object ? ResolveObject<C, V>
   : V;
 
@@ -315,12 +301,7 @@ type ValidInput<C, T, FieldRefType, TypeName extends string> =
 // ValidExprArg validates general expression arguments (field refs must exist)
 
 // Input type aliases for validation
-export type StringArgInput<C, T extends StringArg<C>> = ValidInput<
-  C,
-  T,
-  StringFieldRef<C>,
-  "string"
->;
+export type StringArgInput<C, T extends StringArg<C>> = ValidInput<C, T, StringFieldRef<C>, "string">;
 
 export type NumericArgInput<C, T extends NumericArg<C>> =
   T extends number ? T : ValidInput<C, T, SmartNumericFieldRef<C>, "numeric">;
@@ -328,8 +309,7 @@ export type NumericArgInput<C, T extends NumericArg<C>> =
 export type BooleanArgInput<C, T extends BooleanArg<C>> =
   T extends boolean ? T : ValidInput<C, T, BooleanFieldRef<C>, "boolean">;
 
-export type DateArgInput<C, T extends DateArg<C>> =
-  T extends Date ? T : ValidInput<C, T, DateFieldRef<C>, "date">;
+export type DateArgInput<C, T extends DateArg<C>> = T extends Date ? T : ValidInput<C, T, DateFieldRef<C>, "date">;
 
 export type ArrayArgInput<C, T extends ArrayArg<C>> =
   T extends readonly unknown[] ? T : ValidInput<C, T, ArrayFieldRefLike<C>, "array">;
@@ -354,8 +334,7 @@ export type AccumulatorArgInput<C, T extends AccumulatorExprArg<C>> =
     : OpaqueError<`Invalid variable: $$${Var}`>
   : T extends VarRef<C> | VarPathRef<C> ? T
   : T extends `$${string}` ? ValidExpressionValue<C, T>
-  : T extends string ?
-    OpaqueError<`Bare string "${T}" is not valid in accumulator position — did you mean "$${T}"?`>
+  : T extends string ? OpaqueError<`Bare string "${T}" is not valid in accumulator position — did you mean "$${T}"?`>
   : T;
 export type AccumulatorArgInputs<C, T extends readonly AccumulatorExprArg<C>[]> = {
   [K in keyof T]: AccumulatorArgInput<C, T[K]>;
@@ -420,9 +399,7 @@ type NumericMatchOpsBase = ComparisonOps<MatchNumericIn> & {
 };
 
 // $regex/$options: $options requires $regex to be present
-type StringRegexOps =
-  | { $regex: string | RegExp; $options?: string }
-  | { $regex?: undefined; $options?: undefined };
+type StringRegexOps = { $regex: string | RegExp; $options?: string } | { $regex?: undefined; $options?: undefined };
 
 type StringMatchOpsBase = ComparisonOps<MatchStringIn> & {
   $gt?: MatchStringIn;
@@ -436,8 +413,7 @@ type StringMatchOpsBase = ComparisonOps<MatchStringIn> & {
 type ArrayMatchOpsBase<E> = {
   $size?: number;
   $all?: readonly E[];
-  $elemMatch?: [E] extends [Dict<unknown>] ? ValidMatchFilterWithBuilder<E>
-  : MatchOperators<never, E>;
+  $elemMatch?: [E] extends [Dict<unknown>] ? ValidMatchFilterWithBuilder<E> : MatchOperators<never, E>;
   $in?: readonly E[];
   $nin?: readonly E[];
   $exists?: boolean;
@@ -507,16 +483,7 @@ export type ValidMatchFilterWithBuilder<C> = {
 // Common Expression Function Signatures
 // ==========================================
 
-export type TimeUnit =
-  | "year"
-  | "quarter"
-  | "month"
-  | "week"
-  | "day"
-  | "hour"
-  | "minute"
-  | "second"
-  | "millisecond";
+export type TimeUnit = "year" | "quarter" | "month" | "week" | "day" | "hour" | "minute" | "second" | "millisecond";
 
 type WindowBoundary = number | "current" | "unbounded";
 

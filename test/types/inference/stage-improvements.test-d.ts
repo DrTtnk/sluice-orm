@@ -124,7 +124,5 @@ const changeStream = users.aggregate($changeStream({})).toList();
 expectType<Awaited<typeof changeStream>[number]>({} as Awaited<typeof changeStream>[number]);
 
 // $unwind with preserveNullAndEmptyArrays should reflect nullable element
-const unwindPreserve = users
-  .aggregate($unwind({ path: "$tags", preserveNullAndEmptyArrays: true }))
-  .toList();
+const unwindPreserve = users.aggregate($unwind({ path: "$tags", preserveNullAndEmptyArrays: true })).toList();
 expectType<string | null | undefined>({} as Awaited<typeof unwindPreserve>[number]["tags"]);

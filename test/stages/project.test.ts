@@ -73,9 +73,7 @@ describe("Project Runtime Tests", () => {
     const result = await coll.aggregate($project($ => ({ tags: 0, metadata: 0 }))).toList();
 
     expect(result.length).toBe(2);
-    expectType<{ _id: ObjectId; name: string; price: number; category: string; stock: number }[]>(
-      result,
-    );
+    expectType<{ _id: ObjectId; name: string; price: number; category: string; stock: number }[]>(result);
     expect(result[0]).not.toHaveProperty("tags");
     expect(result[0]).not.toHaveProperty("metadata");
   });

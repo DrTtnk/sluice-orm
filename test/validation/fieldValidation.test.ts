@@ -828,9 +828,7 @@ describe("Field Validation - Runtime", () => {
     });
 
     const results = await dbRegistry(db)
-      .users.aggregate(
-        $addFields($ => ({ activityScore: $.add($.multiply("$age", 2), "$metadata.visits") })),
-      )
+      .users.aggregate($addFields($ => ({ activityScore: $.add($.multiply("$age", 2), "$metadata.visits") })))
       .toList();
 
     assertSync(S.Array(ResultSchema), results);

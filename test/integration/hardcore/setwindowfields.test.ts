@@ -173,10 +173,7 @@ describe("Hardcore: Complex $setWindowFields with obscure window functions", () 
                     $getField: {
                       field: "rows",
                       input: {
-                        $arrayElemAt: [
-                          { $arrayElemAt: [{ $arrayElemAt: ["$matrixMetadata", 0] }, 0] },
-                          0,
-                        ],
+                        $arrayElemAt: [{ $arrayElemAt: [{ $arrayElemAt: ["$matrixMetadata", 0] }, 0] }, 0],
                       },
                     },
                   },

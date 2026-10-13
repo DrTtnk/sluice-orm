@@ -82,9 +82,7 @@ describe("Bitwise Operators Runtime Tests", () => {
     });
 
     const results = await dbRegistry(db)
-      .docs.aggregate(
-        $addFields($ => ({ commonBits: $.bitAnd("$flags", "$permissions", "$mask") })),
-      )
+      .docs.aggregate($addFields($ => ({ commonBits: $.bitAnd("$flags", "$permissions", "$mask") })))
       .toList();
 
     assertSync(S.Array(ResultSchema), results);
@@ -242,9 +240,7 @@ describe("Bitwise Operators Runtime Tests", () => {
     });
 
     const results = await dbRegistry(db)
-      .docs.aggregate(
-        $addFields($ => ({ hasAllBasic: $.eq($.bitAnd("$permissions", 0x07), 0x07) })),
-      )
+      .docs.aggregate($addFields($ => ({ hasAllBasic: $.eq($.bitAnd("$permissions", 0x07), 0x07) })))
       .toList();
 
     assertSync(S.Array(ResultSchema), results);
@@ -319,10 +315,7 @@ describe("Bitwise Operators Runtime Tests", () => {
     const results = await dbRegistry(db)
       .docs.aggregate(
         $match($ => ({
-          $expr: $.and(
-            $.gt($.bitAnd("$permissions", 0x04), 0),
-            $.eq($.bitAnd("$permissions", 0x08), 0),
-          ),
+          $expr: $.and($.gt($.bitAnd("$permissions", 0x04), 0), $.eq($.bitAnd("$permissions", 0x08), 0)),
         })),
       )
       .toList();
@@ -338,9 +331,7 @@ describe("Bitwise Operators Runtime Tests", () => {
     });
 
     const results = await dbRegistry(db)
-      .docs.aggregate(
-        $addFields($ => ({ finalFlags: $.bitAnd($.bitOr("$flags", "$permissions"), "$mask") })),
-      )
+      .docs.aggregate($addFields($ => ({ finalFlags: $.bitAnd($.bitOr("$flags", "$permissions"), "$mask") })))
       .toList();
 
     assertSync(S.Array(ResultSchema), results);

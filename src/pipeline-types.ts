@@ -1,8 +1,8 @@
 import type { Collection } from "mongodb";
 import type * as tf from "type-fest";
 
-import type { OpaqueError } from "./type-errors.js";
 import type { ExecutionMode, OperationResult } from "./execution-types.js";
+import type { OpaqueError } from "./type-errors.js";
 import type { SimplifyWritable } from "./type-utils.js";
 
 /**
@@ -35,9 +35,7 @@ export type Agg<TIn, TCurrent, Execution extends ExecutionMode = "promise"> = {
   readonly _current: SimplifyWritable<TCurrent>;
   readonly stages: readonly object[];
   pipe<TOut>(stage: (agg: Agg<TIn, TCurrent>) => Agg<TIn, TOut>): Agg<TIn, TOut, Execution>;
-  toList(
-    collection?: Collection,
-  ): OperationResult<SimplifyWritable<CheckedResult<TCurrent>>[], Execution>;
+  toList(collection?: Collection): OperationResult<SimplifyWritable<CheckedResult<TCurrent>>[], Execution>;
   /** Returns the accumulated pipeline stages as formatted JSON */
   toMQL(): string;
 };
@@ -129,10 +127,7 @@ type GenericPipelineBuilder<
 > = {
   <A>(s1: BStage<TIn, Brand, TIn, A>): PipelineOutput<Mode, TIn, A, Target, Execution>;
 
-  <A, B>(
-    s1: BStage<TIn, Brand, TIn, A>,
-    s2: BStage<TIn, Brand, A, B>,
-  ): PipelineOutput<Mode, TIn, B, Target, Execution>;
+  <A, B>(s1: BStage<TIn, Brand, TIn, A>, s2: BStage<TIn, Brand, A, B>): PipelineOutput<Mode, TIn, B, Target, Execution>;
 
   <A, B, C>(
     s1: BStage<TIn, Brand, TIn, A>,
@@ -300,19 +295,17 @@ type GenericPipelineBuilder<
 export type PipelineBuilder<TIn> = GenericPipelineBuilder<TIn, {}, "pipeline">;
 
 /** For collection.aggregate() — returns Agg instead of TypedPipeline */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export type AggregateBuilder<
+export type AggregateBuilder<T, Execution extends ExecutionMode = "promise"> = GenericPipelineBuilder<
   T,
-  Execution extends ExecutionMode = "promise",
-> = GenericPipelineBuilder<T, {}, "agg", unknown, Execution>;
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  {},
+  "agg",
+  unknown,
+  Execution
+>;
 
 /** For update pipelines — only UpdateStageBrand stages, validates output extends C */
 export type UpdatePipelineBuilder<C> = GenericPipelineBuilder<C, UpdateStageBrand, "update", C>;
 
 /** For schema migration — only UpdateStageBrand stages, validates Simplify<output> extends TTo */
-export type MigrationPipelineBuilder<TFrom, TTo> = GenericPipelineBuilder<
-  TFrom,
-  UpdateStageBrand,
-  "migration",
-  TTo
->;
+export type MigrationPipelineBuilder<TFrom, TTo> = GenericPipelineBuilder<TFrom, UpdateStageBrand, "migration", TTo>;

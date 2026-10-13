@@ -52,10 +52,7 @@ describe("Hardcore: $arrayToObject with dynamic key generation", () => {
       value: S.Number,
     });
 
-    const ResultSchema = S.Struct({ _id: ObjectIdSchema }).pipe(
-      S.extend(TagFlagsSchema),
-      S.extend(TotalsSchema),
-    );
+    const ResultSchema = S.Struct({ _id: ObjectIdSchema }).pipe(S.extend(TagFlagsSchema), S.extend(TotalsSchema));
 
     const usersWithOrders = registry("8.0", { usersWithOrders: UserWithOrdersSchema });
 
