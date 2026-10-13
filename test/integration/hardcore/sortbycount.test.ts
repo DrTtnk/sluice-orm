@@ -47,7 +47,9 @@ describe("Hardcore: $sortByCount with union field", () => {
     expect(sluiceResults.length).toBeGreaterThan(0);
     expectType<typeof ResultSchema.Type>({} as typeof sluiceResults);
 
-    // 7. Validate Equivalence
-    expect(sluiceResults).toEqual(rawResults);
+    // 7. Validate Equivalence. Groups with equal counts come back in unspecified order, so sort by _id first.
+    const byId = <T extends { _id?: unknown }>(items: readonly T[]) =>
+      [...items].sort((a, b) => JSON.stringify(a._id).localeCompare(JSON.stringify(b._id)));
+    expect(byId(sluiceResults)).toEqual(byId(rawResults));
   });
 });

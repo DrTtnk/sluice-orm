@@ -25,8 +25,9 @@ export const setup = async () => {
       container,
     };
 
-  // Start MongoDB container
-  container = await new MongoDBContainer("mongo:8.0").start();
+  // Start MongoDB container.
+  // mongo:8.0 and later refuse to start on Linux kernel 6.19+ (SERVER-121912): use 7.0 on such hosts.
+  container = await new MongoDBContainer("mongo:7.0").start();
   const uri = container.getConnectionString();
 
   client = new MongoClient(uri, { directConnection: true });

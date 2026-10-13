@@ -7,6 +7,7 @@ import { setup, teardown } from "../utils/setup.js";
 
 describe("Effect Registry with Layer", () => {
   const UserSchema = {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     Type: null! as { _id: string; name: string; age: number; active: boolean },
   };
 

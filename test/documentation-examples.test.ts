@@ -603,17 +603,26 @@ describe("Documentation Examples — Type & Runtime Validation", () => {
       const bound = dbRegistry(db);
       const id = new ObjectId().toHexString();
 
-      await bound.users.insertOne({
-        _id: id,
-        name: "Test User",
-        email: "test@example.com",
-        age: 25,
-        department: "Testing",
-        createdAt: new Date(),
-      }).execute();
+      await bound.users
+        .insertOne({
+          _id: id,
+          name: "Test User",
+          email: "test@example.com",
+          age: 25,
+          department: "Testing",
+          createdAt: new Date(),
+        })
+        .execute();
 
       const found = await bound.users.findOne($ => ({ _id: id })).toOne();
-      expectType<{ _id: string; name: string; email: string; age: number; department: string; createdAt: Date } | null>(found);
+      expectType<{
+        _id: string;
+        name: string;
+        email: string;
+        age: number;
+        department: string;
+        createdAt: Date;
+      } | null>(found);
 
       await bound.users.deleteOne($ => ({ _id: id })).execute();
     });
@@ -622,14 +631,20 @@ describe("Documentation Examples — Type & Runtime Validation", () => {
       const bound = dbRegistry(db);
       const id = new ObjectId().toHexString();
 
-      await bound.users.insertOne({
-        _id: id, name: "Update Test", email: "u@x.com", age: 20, department: "QA", createdAt: new Date(),
-      }).execute();
+      await bound.users
+        .insertOne({
+          _id: id,
+          name: "Update Test",
+          email: "u@x.com",
+          age: 20,
+          department: "QA",
+          createdAt: new Date(),
+        })
+        .execute();
 
-      await bound.users.updateOne(
-        $ => ({ _id: id }),
-        { $set: { name: "Updated" }, $inc: { age: 1 } },
-      ).execute();
+      await bound.users
+        .updateOne($ => ({ _id: id }), { $set: { name: "Updated" }, $inc: { age: 1 } })
+        .execute();
 
       await bound.users.deleteOne($ => ({ _id: id })).execute();
     });
@@ -648,12 +663,26 @@ describe("Documentation Examples — Type & Runtime Validation", () => {
       const bound = dbRegistry(db);
       const id = new ObjectId().toHexString();
 
-      await bound.users.insertOne({
-        _id: id, name: "Delete Me", email: "d@x.com", age: 1, department: "None", createdAt: new Date(),
-      }).execute();
+      await bound.users
+        .insertOne({
+          _id: id,
+          name: "Delete Me",
+          email: "d@x.com",
+          age: 1,
+          department: "None",
+          createdAt: new Date(),
+        })
+        .execute();
 
       const deleted = await bound.users.findOneAndDelete($ => ({ _id: id })).execute();
-      expectType<{ _id: string; name: string; email: string; age: number; department: string; createdAt: Date } | null>(deleted);
+      expectType<{
+        _id: string;
+        name: string;
+        email: string;
+        age: number;
+        department: string;
+        createdAt: Date;
+      } | null>(deleted);
     });
   });
 
@@ -679,10 +708,7 @@ describe("Documentation Examples — Type & Runtime Validation", () => {
       const m = migrate<OldUser, NewUser>();
 
       // Valid: add email, remove legacyField
-      const _migration = m.pipe(
-        $set({ email: "unknown@example.com" }),
-        $unset("legacyField"),
-      );
+      const _migration = m.pipe($set({ email: "unknown@example.com" }), $unset("legacyField"));
 
       // Valid: Using $addFields with expression
       const _migration2 = m.pipe(
@@ -715,13 +741,15 @@ describe("Documentation Examples — Type & Runtime Validation", () => {
         )
         .toList();
 
-      expectType<{
-        _id: string;
-        productName: string;
-        totalRevenue: number;
-        totalSold: number;
-        orderCount: number;
-      }[]>(topProducts);
+      expectType<
+        {
+          _id: string;
+          productName: string;
+          totalRevenue: number;
+          totalSold: number;
+          orderCount: number;
+        }[]
+      >(topProducts);
     });
 
     it("customer lifetime value with $lookup", async () => {
@@ -818,9 +846,9 @@ describe("Documentation Examples — Type & Runtime Validation", () => {
         )
         .toList();
 
-      expectType<
-        { userId: string; totalSpent: number; orderCount: number; avgOrder: number }[]
-      >(report);
+      expectType<{ userId: string; totalSpent: number; orderCount: number; avgOrder: number }[]>(
+        report,
+      );
     });
   });
 });
