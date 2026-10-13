@@ -21,6 +21,14 @@ These decisions settle most "(design?)" rows. A row that agrees with a decision 
 | Typo guards | Keep strict: `$unset` of a missing field, unknown key in a find projection, unknown key in a find `sort`. Dotted paths stay allowed in sort and projection. |
 | Pipeline-form updates | Fix. Accept options, `findOneAndUpdate` and bulk updates. Write the tests first. |
 
+### Fixed since this audit
+
+| Gap | Fix | Tests |
+|---|---|---|
+| Top gap 3: four stages were `export declare const` with no runtime value | `$listLocalSessions`, `$listSessions`, `$planCacheStats` and `$shardedDataDistribution` build their stage. The first, second and fourth run only at database level, and sluice has no database-level aggregate yet. Their JSDoc says so. | `test/stages/adminStages.test.ts`, `test/utils/no-declare-only-exports.test.ts` |
+| Top gap 4: `bulkWrite().execute({ ordered: false })` was ignored | `execute` merges its options over the options given to `bulkWrite`. | `test/integration/bulk-write.test.ts` (ordered and unordered) |
+| Top gap 13, part: `$indexOfBytes` and `$indexOfCP` with `end` and no `start` sent `end` as `start` | A lone `end` now sends `start: 0`. | `test/operators/stringOperators.test.ts` |
+
 ## 2. Totals (verified rows)
 
 Rows are counted per verifier-table row. "Out of scope" means a CONFIRMED gap that is newer than 8.0, Atlas-only, or a driver or admin API (section 6).

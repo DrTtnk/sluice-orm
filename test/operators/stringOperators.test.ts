@@ -62,6 +62,30 @@ describe("String Operators Runtime Tests", () => {
     expect(result[0]?.rtrimmed).toBe("  Hello World");
   });
 
+  it("$indexOfBytes and $indexOfCP use `end` as the end of the range when `start` is omitted", async () => {
+    const coll = dbReg(db).strings;
+    const result = await coll
+      .aggregate(
+        $match(() => ({ email: "Alice@Example.COM" })),
+        $project($ => ({
+          // "-" is at index 3 of "ABC-123-DEF", so the range [0, 3) does not contain it
+          bytesBeforeEnd: $.indexOfBytes("$code", "-", undefined, 3),
+          bytesThroughEnd: $.indexOfBytes("$code", "-", undefined, 4),
+          codePointsBeforeEnd: $.indexOfCP("$code", "-", undefined, 3),
+          codePointsThroughEnd: $.indexOfCP("$code", "-", undefined, 4),
+        })),
+      )
+      .toList();
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      bytesBeforeEnd: -1,
+      bytesThroughEnd: 3,
+      codePointsBeforeEnd: -1,
+      codePointsThroughEnd: 3,
+    });
+  });
+
   it("$regexFind should return first match", async () => {
     const coll = dbReg(db).strings;
     const result = await coll

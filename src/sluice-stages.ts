@@ -958,8 +958,9 @@ export const $currentOp = pushStage(options => ({
 >;
 
 /** Lists sessions cached in memory by the `mongod` or `mongos` instance.
+ * Runs only at database level; sluice has no database-level aggregate yet, so running it on a collection fails.
  * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/listLocalSessions/ */
-export declare const $listLocalSessions: <
+export const $listLocalSessions = pushStage(options => ({ $listLocalSessions: resolveStage(options) })) as unknown as <
   C,
   const T extends {
     allUsers?: boolean;
@@ -980,8 +981,9 @@ export declare const $listLocalSessions: <
 >;
 
 /** Lists all sessions stored in the `system.sessions` collection.
+ * Runs only at database level; sluice has no database-level aggregate yet, so running it on a collection fails.
  * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/listSessions/ */
-export declare const $listSessions: <
+export const $listSessions = pushStage(options => ({ $listSessions: resolveStage(options) })) as unknown as <
   C,
   const T extends {
     allUsers?: boolean;
@@ -1003,7 +1005,9 @@ export declare const $listSessions: <
 
 /** Returns plan cache information for a collection.
  * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/planCacheStats/ */
-export declare const $planCacheStats: <C>() => <TIn>(agg: Agg<TIn, C>) => Agg<
+export const $planCacheStats = pushStage(() => ({ $planCacheStats: {} })) as unknown as <C>() => <TIn>(
+  agg: Agg<TIn, C>,
+) => Agg<
   TIn,
   {
     version: string;
@@ -1025,8 +1029,13 @@ export declare const $planCacheStats: <C>() => <TIn>(agg: Agg<TIn, C>) => Agg<
 >;
 
 /** Returns data distribution information for sharded collections.
+ * Runs only at database level on a sharded cluster; sluice has no database-level aggregate yet.
  * @see https://www.mongodb.com/docs/manual/reference/operator/aggregation/shardedDataDistribution/ */
-export declare const $shardedDataDistribution: <C>() => <TIn>(agg: Agg<TIn, C>) => Agg<
+export const $shardedDataDistribution = pushStage(() => ({ $shardedDataDistribution: {} })) as unknown as <C>() => <
+  TIn,
+>(
+  agg: Agg<TIn, C>,
+) => Agg<
   TIn,
   {
     ns: string;

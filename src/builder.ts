@@ -688,7 +688,8 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
     end?: N & NumericArgInput<C, N>,
   ) => Ret<C, number> = (string, substring, start, end) => {
     const args: unknown[] = [string, substring];
-    if (start !== undefined) args.push(start);
+    // The server reads the arguments by position, so a lone `end` needs the default `start`.
+    if (start !== undefined || end !== undefined) args.push(start ?? 0);
     if (end !== undefined) args.push(end);
     return this.varargs("indexOfBytes")(...args);
   };
@@ -701,7 +702,8 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
     end?: N & NumericArgInput<C, N>,
   ) => Ret<C, number> = (string, substring, start, end) => {
     const args: unknown[] = [string, substring];
-    if (start !== undefined) args.push(start);
+    // The server reads the arguments by position, so a lone `end` needs the default `start`.
+    if (start !== undefined || end !== undefined) args.push(start ?? 0);
     if (end !== undefined) args.push(end);
     return this.varargs("indexOfCP")(...args);
   };

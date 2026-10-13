@@ -278,7 +278,8 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
 
     bulkWrite: ((operations: readonly unknown[], options?: { ordered?: boolean }) => ({
       _operations: operations,
-      execute: () => mongoCol.bulkWrite(operations as AnyBulkWriteOperation<T>[], options),
+      execute: (executeOptions?: { ordered?: boolean }) =>
+        mongoCol.bulkWrite(operations as AnyBulkWriteOperation<T>[], { ...options, ...executeOptions }),
     })) as unknown as CrudCollection<T>["bulkWrite"],
   };
 }

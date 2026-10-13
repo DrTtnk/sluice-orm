@@ -124,6 +124,42 @@ describe("BulkWrite Runtime Tests", () => {
     expect(doc?.count).toBe(42);
   });
 
+  it("should stop at the first error when ordered", async () => {
+    const coll = registry("8.0", { widgets_stop: WidgetSchema })(db).widgets_stop;
+    const duplicateId = new ObjectId();
+    const laterId = new ObjectId();
+    await coll.insertOne({ _id: duplicateId, name: "existing", count: 0, active: true }).execute();
+
+    await expect(
+      coll
+        .bulkWrite([
+          { insertOne: { document: { _id: duplicateId, name: "duplicate", count: 1, active: true } } },
+          { insertOne: { document: { _id: laterId, name: "later", count: 2, active: true } } },
+        ])
+        .execute(),
+    ).rejects.toThrow();
+
+    expect(await coll.countDocuments($ => ({ _id: laterId })).execute()).toBe(0);
+  });
+
+  it("should continue after an error when execute receives ordered: false", async () => {
+    const coll = registry("8.0", { widgets_unordered: WidgetSchema })(db).widgets_unordered;
+    const duplicateId = new ObjectId();
+    const laterId = new ObjectId();
+    await coll.insertOne({ _id: duplicateId, name: "existing", count: 0, active: true }).execute();
+
+    await expect(
+      coll
+        .bulkWrite([
+          { insertOne: { document: { _id: duplicateId, name: "duplicate", count: 1, active: true } } },
+          { insertOne: { document: { _id: laterId, name: "later", count: 2, active: true } } },
+        ])
+        .execute({ ordered: false }),
+    ).rejects.toThrow();
+
+    expect(await coll.countDocuments($ => ({ _id: laterId })).execute()).toBe(1);
+  });
+
   it("should handle upsert in updateOne", async () => {
     const reg = registry("8.0", { widgets_ups: WidgetSchema });
     const coll = reg(db).widgets_ups;
