@@ -22,6 +22,9 @@ import type { ExprBuilder, SimplifyWritable, ValidMatchFilterWithBuilder } from 
 
 export type CrudFilter<C> = ValidMatchFilterWithBuilder<C>;
 
+/** Options of a pipeline update. MongoDB rejects `arrayFilters` together with a pipeline. */
+export type PipelineUpdateOptions = { upsert?: boolean; hint?: string | Document };
+
 export type SortSpec<C> = Partial<Record<string | (keyof C & string), 1 | -1>>;
 export type ProjectionSpec<C> = Partial<Record<keyof C & string, 0 | 1>>;
 
@@ -138,7 +141,7 @@ export type BulkWriteOp<C extends Document> =
   | {
       updateOne: {
         filter: CrudFilter<C>;
-        update: UpdateSpec<C>;
+        update: UpdateSpec<C> | UpdatePipelineCallback<C>;
         upsert?: boolean;
         arrayFilters?: Document[];
         hint?: string | Document;
@@ -148,7 +151,7 @@ export type BulkWriteOp<C extends Document> =
   | {
       updateMany: {
         filter: CrudFilter<C>;
-        update: UpdateSpec<C>;
+        update: UpdateSpec<C> | UpdatePipelineCallback<C>;
         upsert?: boolean;
         arrayFilters?: Document[];
         hint?: string | Document;
@@ -204,7 +207,7 @@ export interface CrudCollection<C extends Document, Mode extends ExecutionMode =
     filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
     update: Update extends UpdatePipelineCallback<C> ? Update : Update & ValidateUpdateSpec<C, Update>,
     ...options: NoInfer<
-      Update extends UpdatePipelineCallback<C> ? []
+      Update extends UpdatePipelineCallback<C> ? [PipelineUpdateOptions?]
       : ExtractRequiredIdentifiers<Update> extends never ? [UpdateOpts<C, Update>?]
       : [UpdateOpts<C, Update>]
     >
@@ -218,7 +221,7 @@ export interface CrudCollection<C extends Document, Mode extends ExecutionMode =
     filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
     update: Update extends UpdatePipelineCallback<C> ? Update : Update & ValidateUpdateSpec<C, Update>,
     ...options: NoInfer<
-      Update extends UpdatePipelineCallback<C> ? []
+      Update extends UpdatePipelineCallback<C> ? [PipelineUpdateOptions?]
       : ExtractRequiredIdentifiers<Update> extends never ? [UpdateOpts<C, Update>?]
       : [UpdateOpts<C, Update>]
     >
@@ -257,15 +260,22 @@ export interface CrudCollection<C extends Document, Mode extends ExecutionMode =
 
   findOneAndUpdate: <
     const R extends NoInfer<ValidMatchFilterWithBuilder<C>>,
-    const Update extends UpdateSpec<C>,
+    const Update extends UpdateSpec<C> | UpdatePipelineCallback<C>,
     const O extends FindOneAndOptions<C> = {},
   >(
     filter: ($: ExprBuilder<SimplifyWritable<C>>) => R,
-    update: Update & ValidateUpdateSpec<C, Update>,
-    ...options: ExtractRequiredIdentifiers<Update> extends never ?
+    update: Update extends UpdatePipelineCallback<C> ? Update : Update & ValidateUpdateSpec<C, Update>,
+    ...options: Update extends UpdatePipelineCallback<C> ?
+      [(NoInfer<PipelineUpdateOptions> & O & ValidateProjectionOptions<O>)?]
+    : ExtractRequiredIdentifiers<Update> extends never ?
       [(NoInfer<UpdateOpts<C, Update>> & O & ValidateProjectionOptions<O>)?]
     : [NoInfer<UpdateOpts<C, Update>> & O & ValidateProjectionOptions<O>]
-  ) => FindOneAndUpdateBuilder<C, Update, Mode, FindResult<C, O>>;
+  ) => FindOneAndUpdateBuilder<
+    C,
+    Update extends UpdatePipelineCallback<C> ? UpdateSpec<C> : Update,
+    Mode,
+    FindResult<C, O>
+  >;
 
   countDocuments: {
     (): CountBuilder<Mode>;

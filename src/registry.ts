@@ -75,6 +75,20 @@ export type BoundCollection<TName extends string, TSchema extends Dict<unknown>>
 // CRUD Runtime Implementation
 // ==========================================
 
+/** An update is a spec object, or a callback that builds an update pipeline. A pipeline is sent as its stages. */
+const resolveUpdate = (updateArg: unknown): unknown =>
+  typeof updateArg === "function" ? (updateArg(update()) as { stages: readonly object[] }).stages : updateArg;
+
+/** Resolves the pipeline callback of an `updateOne` or `updateMany` operation of a `bulkWrite`. */
+const resolveBulkUpdate = (operation: unknown): unknown => {
+  const op = operation as Record<string, { update?: unknown } | undefined>;
+  for (const kind of ["updateOne", "updateMany"] as const) {
+    const body = op[kind];
+    if (body !== undefined) return { [kind]: { ...body, update: resolveUpdate(body.update) } };
+  }
+  return operation;
+};
+
 /**
  * Creates CRUD methods for a collection - no proxies, direct implementation
  */
@@ -139,12 +153,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
       options?: { upsert?: boolean; hint?: unknown; arrayFilters?: unknown },
     ) => {
       const filter = extractFilter(filterFn);
-      // Resolve the update: callback returns TypedPipeline, or update spec object
-      const updateDoc =
-        typeof updateArg === "function" ?
-          // Callback form: invoke with operators, get stages from TypedPipeline
-          (updateArg(update()) as { stages: readonly object[] }).stages
-        : updateArg;
+      const updateDoc = resolveUpdate(updateArg);
 
       return {
         _filter: filter,
@@ -160,12 +169,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
       options?: { upsert?: boolean; hint?: unknown; arrayFilters?: unknown },
     ) => {
       const filter = extractFilter(filterFn);
-      // Resolve the update: callback returns TypedPipeline, or update spec object
-      const updateDoc =
-        typeof updateArg === "function" ?
-          // Callback form: invoke with operators, get stages from TypedPipeline
-          (updateArg(update()) as { stages: readonly object[] }).stages
-        : updateArg;
+      const updateDoc = resolveUpdate(updateArg);
 
       return {
         _filter: filter,
@@ -245,14 +249,17 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
         maxTimeMS?: number;
         comment?: string;
       },
-    ) => ({
-      _filter: extractFilter(filterFn),
-      _update: updateArg,
-      execute: () =>
-        mongoCol
-          .findOneAndUpdate(extractFilter(filterFn), updateArg as Document, options as FindOneAndUpdateOptions)
-          .then(r => r as T | null),
-    })) as CrudCollection<T>["findOneAndUpdate"],
+    ) => {
+      const updateDoc = resolveUpdate(updateArg);
+      return {
+        _filter: extractFilter(filterFn),
+        _update: updateDoc,
+        execute: () =>
+          mongoCol
+            .findOneAndUpdate(extractFilter(filterFn), updateDoc as Document, options as FindOneAndUpdateOptions)
+            .then(r => r as T | null),
+      };
+    }) as CrudCollection<T>["findOneAndUpdate"],
 
     countDocuments: (
       filterFn?: unknown,
@@ -279,7 +286,10 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
     bulkWrite: ((operations: readonly unknown[], options?: { ordered?: boolean }) => ({
       _operations: operations,
       execute: (executeOptions?: { ordered?: boolean }) =>
-        mongoCol.bulkWrite(operations as AnyBulkWriteOperation<T>[], { ...options, ...executeOptions }),
+        mongoCol.bulkWrite(operations.map(resolveBulkUpdate) as AnyBulkWriteOperation<T>[], {
+          ...options,
+          ...executeOptions,
+        }),
     })) as unknown as CrudCollection<T>["bulkWrite"],
   };
 }
