@@ -32,10 +32,44 @@ const OrderWithStatusSchema = S.Struct({
   priority: S.Literal(1, 2, 3),
 });
 
+const NestedDocumentSchema = S.Struct({
+  _id: ObjectIdSchema,
+  user: S.Struct({
+    name: S.String,
+    age: S.Number,
+  }),
+  scores: S.Array(S.Number),
+  metadata: S.Struct({
+    createdAt: S.Date,
+    tags: S.Array(S.String),
+  }),
+});
+
+const ComplexDocumentSchema = S.Struct({
+  _id: ObjectIdSchema,
+  name: S.String,
+  orders: S.Array(
+    S.Struct({
+      orderId: S.String,
+      amount: S.Number,
+      status: S.Literal("pending", "shipped", "delivered"),
+    }),
+  ),
+  reviews: S.Array(
+    S.Struct({
+      rating: S.Number,
+      comment: S.String,
+      verified: S.Boolean,
+    }),
+  ),
+});
+
 const dbRegistry = registry("8.0", {
   articles: ArticleSchema,
   budgets: MonthlyBudgetSchema,
   orders: OrderWithStatusSchema,
+  nestedDocs: NestedDocumentSchema,
+  complexDocs: ComplexDocumentSchema,
 });
 
 describe("Match Runtime Tests", () => {
@@ -104,6 +138,65 @@ describe("Match Runtime Tests", () => {
           orderId: "ORD2",
           status: "pending",
           priority: 2,
+        },
+      ])
+      .execute();
+
+    await dbRegistry(db)
+      .nestedDocs.insertMany([
+        {
+          _id: new ObjectId("000000000000000000000008"),
+          user: { name: "John Doe", age: 30 },
+          scores: [85, 90, 88],
+          metadata: { createdAt: new Date("2023-01-01"), tags: ["active", "premium"] },
+        },
+        {
+          _id: new ObjectId("000000000000000000000009"),
+          user: { name: "Jane Smith", age: 25 },
+          scores: [92, 95],
+          metadata: { createdAt: new Date("2023-02-01"), tags: ["active"] },
+        },
+        {
+          _id: new ObjectId("00000000000000000000000a"),
+          user: { name: "Bob Johnson", age: 35 },
+          scores: [78, 82, 80, 85],
+          metadata: { createdAt: new Date("2023-03-01"), tags: ["inactive"] },
+        },
+      ])
+      .execute();
+
+    await dbRegistry(db)
+      .complexDocs.insertMany([
+        {
+          _id: new ObjectId("00000000000000000000000b"),
+          name: "Alice Cooper",
+          orders: [
+            { orderId: "ORD001", amount: 150, status: "delivered" },
+            { orderId: "ORD002", amount: 75, status: "shipped" },
+          ],
+          reviews: [
+            { rating: 5, comment: "Excellent service!", verified: true },
+            { rating: 4, comment: "Good product", verified: true },
+          ],
+        },
+        {
+          _id: new ObjectId("00000000000000000000000c"),
+          name: "Bob Wilson",
+          orders: [{ orderId: "ORD003", amount: 200, status: "pending" }],
+          reviews: [{ rating: 3, comment: "Average experience", verified: false }],
+        },
+        {
+          _id: new ObjectId("00000000000000000000000d"),
+          name: "Charlie Brown",
+          orders: [
+            { orderId: "ORD004", amount: 50, status: "delivered" },
+            { orderId: "ORD005", amount: 120, status: "shipped" },
+            { orderId: "ORD006", amount: 300, status: "pending" },
+          ],
+          reviews: [
+            { rating: 5, comment: "Outstanding!", verified: true },
+            { rating: 2, comment: "Poor quality", verified: true },
+          ],
         },
       ])
       .execute();
@@ -317,6 +410,116 @@ describe("Match Runtime Tests", () => {
       .toList();
 
     expect(results.length).toBeGreaterThan(0);
+    assertSync(S.Array(ResultSchema), results);
+    expectType<typeof ResultSchema.Type>({} as (typeof results)[number]);
+  });
+
+  it("should match dotted path in nested object", async () => {
+    const ResultSchema = NestedDocumentSchema;
+
+    const results = await dbRegistry(db)
+      .nestedDocs.aggregate(
+        $match(() => ({ "user.name": "John Doe" })), // Type assertion needed due to current type limitations
+      )
+      .toList();
+
+    expect(results.length).toBe(1);
+    expect(results[0]?.user.name).toBe("John Doe");
+    assertSync(S.Array(ResultSchema), results);
+    expectType<typeof ResultSchema.Type>({} as (typeof results)[number]);
+  });
+
+  it("should match dotted path in array element", async () => {
+    const ResultSchema = NestedDocumentSchema;
+
+    const results = await dbRegistry(db)
+      .nestedDocs.aggregate(
+        $match(() => ({ "scores.0": { $gte: 85 } })), // Type assertion needed due to current type limitations
+      )
+      .toList();
+
+    expect(results.length).toBeGreaterThan(0);
+    assertSync(S.Array(ResultSchema), results);
+    expectType<typeof ResultSchema.Type>({} as (typeof results)[number]);
+  });
+
+  it("should match dotted path in deeply nested object", async () => {
+    const ResultSchema = NestedDocumentSchema;
+
+    const results = await dbRegistry(db)
+      .nestedDocs.aggregate(
+        $match(() => ({ "metadata.tags": "active" })), // Type assertion needed due to current type limitations
+      )
+      .toList();
+
+    expect(results.length).toBeGreaterThan(0);
+    assertSync(S.Array(ResultSchema), results);
+    expectType<typeof ResultSchema.Type>({} as (typeof results)[number]);
+  });
+
+  it("should match $elemMatch on array of objects", async () => {
+    const ResultSchema = ComplexDocumentSchema;
+
+    const results = await dbRegistry(db)
+      .complexDocs.aggregate(
+        $match($ => ({
+          orders: { $elemMatch: { status: "delivered", amount: { $gt: 100 } } },
+        })),
+      )
+      .toList();
+
+    expect(results.length).toBe(1); // Only Alice Cooper has a delivered order > $100
+    expect(results[0]?.name).toBe("Alice Cooper");
+    assertSync(S.Array(ResultSchema), results);
+    expectType<typeof ResultSchema.Type>({} as (typeof results)[number]);
+  });
+
+  it("should match $elemMatch with complex conditions", async () => {
+    const ResultSchema = ComplexDocumentSchema;
+
+    const results = await dbRegistry(db)
+      .complexDocs.aggregate(
+        $match($ => ({
+          reviews: { $elemMatch: { rating: { $gte: 4 }, verified: true } },
+        })),
+      )
+      .toList();
+
+    expect(results.length).toBeGreaterThan(0); // Alice and Charlie have verified reviews with rating >= 4
+    assertSync(S.Array(ResultSchema), results);
+    expectType<typeof ResultSchema.Type>({} as (typeof results)[number]);
+  });
+
+  it("should match $elemMatch with nested object conditions", async () => {
+    const ResultSchema = ComplexDocumentSchema;
+
+    const results = await dbRegistry(db)
+      .complexDocs.aggregate(
+        $match($ => ({
+          orders: { $elemMatch: { amount: { $lt: 100 }, status: "shipped" } },
+        })),
+      )
+      .toList();
+
+    expect(results.length).toBe(1); // Only Alice has a shipped order < $100
+    expect(results[0]?.name).toBe("Alice Cooper");
+    assertSync(S.Array(ResultSchema), results);
+    expectType<typeof ResultSchema.Type>({} as (typeof results)[number]);
+  });
+
+  it("should match $elemMatch on primitive arrays", async () => {
+    const ResultSchema = NestedDocumentSchema;
+
+    const results = await dbRegistry(db)
+      .nestedDocs.aggregate(
+        $match($ => ({
+          scores: { $elemMatch: { $gt: 90 } },
+        })),
+      )
+      .toList();
+
+    expect(results.length).toBe(1); // Only Jane Smith has scores > 90
+    expect(results[0]?.user.name).toBe("Jane Smith");
     assertSync(S.Array(ResultSchema), results);
     expectType<typeof ResultSchema.Type>({} as (typeof results)[number]);
   });

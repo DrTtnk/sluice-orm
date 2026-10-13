@@ -31,7 +31,7 @@ type BsonGuard<T> =
 // Path Generation (MongoDB Style)
 // ============================================
 
-type RawPath<T> = tf.Paths<BsonGuard<T>, { maxRecursionDepth: 10 }> & string;
+type RawPath<T> = Extract<tf.Paths<BsonGuard<T>, { maxRecursionDepth: 10 }>, string>;
 
 type ReplaceDotNumber<T, With extends string> =
   T extends `${infer Head}.${infer Rest}` ?
@@ -155,18 +155,6 @@ export type UpdateSpecOfType<T, Target, Value> = {
     Extract<ValidPositionalPath<K>, string>
   : never]?: Value;
 };
-
-/**
- * Specific validated spec types for common use cases
- */
-export type NumericUpdateSpec<T, Value> = UpdateSpecOfType<T, number | null | undefined, Value>;
-export type StringUpdateSpec<T, Value> = UpdateSpecOfType<T, string | null | undefined, Value>;
-export type DateUpdateSpec<T, Value> = UpdateSpecOfType<T, Date | null | undefined, Value>;
-export type ComparableUpdateSpec<T, Value> = UpdateSpecOfType<
-  T,
-  string | number | Date | null | undefined,
-  Value
->;
 
 export type HasPrefix<Target extends string, Union extends string> =
   Union extends unknown ?

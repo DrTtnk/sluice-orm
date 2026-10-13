@@ -13,6 +13,7 @@ import type {
   NumericFieldRef,
   PathType,
   PathValueArrayProjection,
+  ResolvePath,
   ResolveValue,
   StringFieldRef,
 } from "./paths.js";
@@ -95,7 +96,6 @@ type NumericArrayPath<T> = FilteredPath<T, readonly number[] | number[] | null |
 export type NumericArrayFieldRef<T> = `$${NumericArrayPath<T>}`;
 
 // Generic path field ref - any valid path in the document
-type AnyPathFieldRef<T> = `$${PathType<T>}`;
 
 // Generic field ref for any field in context
 // Smart field ref - allows any $field when context is any, otherwise strict
@@ -104,7 +104,7 @@ type SmartFieldRef<C, StrictRef> =
   [StrictRef] extends [never] ? OpaqueError<"Invalid field reference"> : StrictRef;
 
 type SmartNumericFieldRef<C> = SmartFieldRef<C, NumericFieldRef<C> | NumericArrayFieldRef<C>>;
-export type SmartAnyPathFieldRef<C> = SmartFieldRef<C, AnyPathFieldRef<C>>;
+export type SmartAnyPathFieldRef<C> = SmartFieldRef<C, `$${PathType<C>}`>;
 
 // Input types - STRICT when context is known, lenient when context is any (inference failure)
 export type ArrayIn<C> = SmartFieldRef<C, ArrayFieldRef<C>> | readonly unknown[];
@@ -237,10 +237,8 @@ type VarRef<C> = VarName<C> extends infer V extends string ? `$$${V}` : never;
 type VarPathRef<C> =
   | (C extends { $this: infer ThisType } ? `$$this.${PathType<ThisType>}` : never)
   | (C extends { $value: infer ValueType } ? `$$value.${PathType<ValueType>}` : never)
-  | {
-      [K in VarsFromContext<C>]: `$$${K}.${PathType<VarsRecord<C>[K]>}`;
-    }[VarsFromContext<C>]
-  | (C extends unknown ? `$$ROOT.${PathType<C>}` | `$$CURRENT.${PathType<C>}` : never);
+  | (C extends unknown ? `$$ROOT.${PathType<C>}` | `$$CURRENT.${PathType<C>}` : never)
+  | { [K in VarsFromContext<C>]: `$$${K}.${PathType<VarsRecord<C>[K]>}` }[VarsFromContext<C>];
 
 type KnownVar<C, V extends string> =
   V extends SystemVarName ? true
@@ -282,18 +280,10 @@ export type ArrayArg<C> =
   | VarRef<C>
   | VarPathRef<C>
   | ArrayLiteral<C>;
+
 // ExprArg accepts ANY valid path (not just typed ones) so ResolveType can work
 // Also accepts literal values (strings, numbers, etc.) for conditional expressions
-export type ExprArg<C> =
-  | SmartAnyPathFieldRef<C>
-  | Ret<C>
-  | VarRef<C>
-  | VarPathRef<C>
-  | number
-  | boolean
-  | Date
-  | (string & {})
-  | null;
+export type ExprArg<C> = AccumulatorExprArg<C> | (string & {});
 
 // AccumulatorExprArg: like ExprArg but WITHOUT bare strings.
 // In accumulator position ($avg, $sum, $min, $max, etc.), a bare string like "score"
@@ -322,17 +312,29 @@ type ValidInput<C, T, FieldRefType, TypeName extends string> =
     : TypeError<`"${T}" is not a valid ${TypeName} field`, `${TypeName} | ${TypeName} field ref`, T>
   : T;
 
-type ValidStringInput<C, T> = ValidInput<C, T, StringFieldRef<C>, "string">;
-type ValidNumericInput<C, T> =
+// ValidExprArg validates general expression arguments (field refs must exist)
+
+// Input type aliases for validation
+export type StringArgInput<C, T extends StringArg<C>> = ValidInput<
+  C,
+  T,
+  StringFieldRef<C>,
+  "string"
+>;
+
+export type NumericArgInput<C, T extends NumericArg<C>> =
   T extends number ? T : ValidInput<C, T, SmartNumericFieldRef<C>, "numeric">;
-type ValidBooleanInput<C, T> =
+
+export type BooleanArgInput<C, T extends BooleanArg<C>> =
   T extends boolean ? T : ValidInput<C, T, BooleanFieldRef<C>, "boolean">;
-type ValidDateInput<C, T> = T extends Date ? T : ValidInput<C, T, DateFieldRef<C>, "date">;
-type ValidArrayInput<C, T> =
+
+export type DateArgInput<C, T extends DateArg<C>> =
+  T extends Date ? T : ValidInput<C, T, DateFieldRef<C>, "date">;
+
+export type ArrayArgInput<C, T extends ArrayArg<C>> =
   T extends readonly unknown[] ? T : ValidInput<C, T, ArrayFieldRefLike<C>, "array">;
 
-// ValidExprArg validates general expression arguments (field refs must exist)
-type ValidExprArg<C, T> =
+export type ExprArgInput<C, T extends ExprArg<C>> =
   T extends `$$${infer Var}.${string}` ?
     KnownVar<C, Var> extends true ?
       T
@@ -341,8 +343,11 @@ type ValidExprArg<C, T> =
   : T extends `$${string}` ? ValidExpressionValue<C, T>
   : T;
 
-// ValidAccumulatorArg: like ValidExprArg but rejects bare strings with helpful error
-type ValidAccumulatorArg<C, T> =
+export type ExprArgInputs<C, T extends readonly ExprArg<C>[]> = {
+  [K in keyof T]: ExprArgInput<C, T[K]>;
+};
+
+export type AccumulatorArgInput<C, T extends AccumulatorExprArg<C>> =
   T extends `$$${infer Var}.${string}` ?
     KnownVar<C, Var> extends true ?
       T
@@ -352,18 +357,6 @@ type ValidAccumulatorArg<C, T> =
   : T extends string ?
     OpaqueError<`Bare string "${T}" is not valid in accumulator position — did you mean "$${T}"?`>
   : T;
-
-// Input type aliases for validation
-export type StringArgInput<C, T extends StringArg<C>> = ValidStringInput<C, T>;
-export type NumericArgInput<C, T extends NumericArg<C>> = ValidNumericInput<C, T>;
-export type BooleanArgInput<C, T extends BooleanArg<C>> = ValidBooleanInput<C, T>;
-export type DateArgInput<C, T extends DateArg<C>> = ValidDateInput<C, T>;
-export type ArrayArgInput<C, T extends ArrayArg<C>> = ValidArrayInput<C, T>;
-export type ExprArgInput<C, T extends ExprArg<C>> = ValidExprArg<C, T>;
-export type ExprArgInputs<C, T extends readonly ExprArg<C>[]> = {
-  [K in keyof T]: ExprArgInput<C, T[K]>;
-};
-export type AccumulatorArgInput<C, T extends AccumulatorExprArg<C>> = ValidAccumulatorArg<C, T>;
 export type AccumulatorArgInputs<C, T extends readonly AccumulatorExprArg<C>[]> = {
   [K in keyof T]: AccumulatorArgInput<C, T[K]>;
 };
@@ -417,16 +410,14 @@ type NumericMatchOpsBase = ComparisonOps<MatchNumericIn> & {
   $gte?: MatchNumericIn;
   $lt?: MatchNumericIn;
   $lte?: MatchNumericIn;
-  $in?: MatchNumericIn[];
-  $nin?: MatchNumericIn[];
-  $mod?: [number, number];
+  $in?: readonly MatchNumericIn[];
+  $nin?: readonly MatchNumericIn[];
+  $mod?: readonly [number, number];
   $bitsAllClear?: number | number[];
   $bitsAllSet?: number | number[];
   $bitsAnyClear?: number | number[];
   $bitsAnySet?: number | number[];
 };
-
-type NumericMatchOperators = WithNot<NumericMatchOpsBase>;
 
 // $regex/$options: $options requires $regex to be present
 type StringRegexOps =
@@ -438,29 +429,20 @@ type StringMatchOpsBase = ComparisonOps<MatchStringIn> & {
   $gte?: MatchStringIn;
   $lt?: MatchStringIn;
   $lte?: MatchStringIn;
-  $in?: MatchStringIn[];
-  $nin?: MatchStringIn[];
+  $in?: readonly MatchStringIn[];
+  $nin?: readonly MatchStringIn[];
 } & StringRegexOps;
-
-type StringMatchOperators = WithNot<StringMatchOpsBase>;
-
-type BooleanMatchOpsBase = ComparisonOps<MatchBooleanIn>;
-
-type BooleanMatchOperators = WithNot<BooleanMatchOpsBase>;
-
-type ElemMatchValue<E> = { $elemMatch: ValidMatchFilterWithBuilder<E> };
 
 type ArrayMatchOpsBase<E> = {
   $size?: number;
   $all?: readonly E[];
-  $elemMatch?: ElemMatchValue<E>;
+  $elemMatch?: [E] extends [Dict<unknown>] ? ValidMatchFilterWithBuilder<E>
+  : MatchOperators<never, E>;
   $in?: readonly E[];
   $nin?: readonly E[];
   $exists?: boolean;
   $type?: BSONTypeAlias;
 };
-
-type ArrayMatchOperators<E> = WithNot<ArrayMatchOpsBase<E>>;
 
 type GeoMatchOpsBase<C> = {
   $geoIntersects?: { $geometry: Geometry };
@@ -483,8 +465,6 @@ type GeoMatchOpsBase<C> = {
   };
 };
 
-type GeoMatchOperators<C> = WithNot<GeoMatchOpsBase<C>>;
-
 type DateMatchOpsBase = ComparisonOps<MatchDateIn> & {
   $gt?: MatchDateIn;
   $gte?: MatchDateIn;
@@ -492,20 +472,20 @@ type DateMatchOpsBase = ComparisonOps<MatchDateIn> & {
   $lte?: MatchDateIn;
 };
 
-type DateMatchOperators = WithNot<DateMatchOpsBase>;
-
 // ValidMatchFilter with builder support
+type MatchOperators<C, V> =
+  [V] extends [number] ? WithNot<NumericMatchOpsBase>
+  : [V] extends [string] ? WithNot<StringMatchOpsBase>
+  : [V] extends [boolean] ? WithNot<ComparisonOps<MatchBooleanIn>>
+  : [V] extends [Date] ? WithNot<DateMatchOpsBase>
+  : [V] extends [readonly (infer E)[]] ? E | Ret<C, E> | WithNot<ArrayMatchOpsBase<E>>
+  : [V] extends [Geometry] ? WithNot<GeoMatchOpsBase<C>>
+  : ComparisonOps<never>;
+
+type MatchFieldValue<C, V> = V | Ret<C, V> | MatchOperators<C, V>;
+
 export type ValidMatchFilterWithBuilder<C> = {
-  [K in keyof C]?:
-    | C[K]
-    | Ret<C, C[K]>
-    | (C[K] extends number ? NumericMatchOperators
-      : C[K] extends string ? StringMatchOperators
-      : C[K] extends boolean ? BooleanMatchOperators
-      : C[K] extends Date ? DateMatchOperators
-      : C[K] extends readonly (infer E)[] ? E | Ret<C, E> | ArrayMatchOperators<E>
-      : C[K] extends Geometry ? GeoMatchOperators<C>
-      : ComparisonOps<never>);
+  [K in PathType<C>]?: MatchFieldValue<C, ResolvePath<C, K>>;
 } & {
   $expr?: BooleanArg<C>;
   $or?: ValidMatchFilterWithBuilder<C>[];

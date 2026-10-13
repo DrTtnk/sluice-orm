@@ -1,6 +1,5 @@
 import type {
   AnyBulkWriteOperation,
-  BulkWriteOptions,
   Collection as MongoCollection,
   CountDocumentsOptions,
   Db,
@@ -17,8 +16,8 @@ import type {
 
 import type { CrudCollection, FindOptions } from "./crud.js";
 import { update } from "./crud/updates/stages/index.js";
-import { resolveStage } from "./runtime-utils.js";
 import type { AggregateBuilder } from "./pipeline-types.js";
+import { resolveStage } from "./runtime-utils.js";
 import type { Dict, SimplifyWritable } from "./type-utils.js";
 
 // ==========================================
@@ -75,6 +74,7 @@ export type BoundCollection<TName extends string, TSchema extends Dict<unknown>>
   TSchema
 > & {
   aggregate: AggregateBuilder<SimplifyWritable<TSchema>>;
+  rawCollection: MongoCollection<SimplifyWritable<TSchema>>;
 } & CrudCollection<SimplifyWritable<TSchema>>;
 
 // ==========================================
@@ -87,7 +87,7 @@ export type BoundCollection<TName extends string, TSchema extends Dict<unknown>>
 function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): CrudCollection<T> {
   // Helper to extract filter from callback - runtime only, types handled by interface
   const extractFilter = (filterFn: unknown): Filter<T> => {
-    if (!filterFn) return {} as Filter<T>;
+    if (!filterFn) return {};
     // The callback returns a MongoDB filter document directly
     return resolveStage(filterFn) as Filter<T>;
   };
@@ -103,7 +103,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
         if (options?.skip) cursor = cursor.skip(options.skip);
         if (options?.limit) cursor = cursor.limit(options.limit);
         if (options?.projection) cursor = cursor.project(options.projection);
-        if (options?.hint) cursor = cursor.hint(options.hint as string);
+        if (options?.hint) cursor = cursor.hint(options.hint);
         if (options?.maxTimeMS) cursor = cursor.maxTimeMS(options.maxTimeMS);
         if (options?.collation) cursor = cursor.collation(options.collation);
         if (options?.comment) cursor = cursor.comment(options.comment);
@@ -123,14 +123,14 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
       _options: options,
       toList: async () => {
         const doc = await mongoCol.findOne(
-          filterFn ? extractFilter(filterFn) : ({} as Filter<T>),
+          filterFn ? extractFilter(filterFn) : ({}),
           options as FindOneOptions,
         );
         return doc ? [doc as T] : [];
       },
       toOne: () =>
         mongoCol.findOne(
-          filterFn ? extractFilter(filterFn) : ({} as Filter<T>),
+          filterFn ? extractFilter(filterFn) : ({}),
           options as FindOneOptions,
         ) as unknown as Promise<T | null>,
     })) as CrudCollection<T>["findOne"],
@@ -194,7 +194,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
       execute: () =>
         mongoCol.replaceOne(
           extractFilter(filterFn),
-          replacement as never,
+          replacement,
           options as ReplaceOptions,
         ),
     })) as CrudCollection<T>["replaceOne"],
@@ -297,7 +297,7 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
           filterFn ? extractFilter(filterFn) : {},
           options as CountDocumentsOptions,
         ),
-    })) as CrudCollection<T>["countDocuments"],
+    })),
 
     estimatedDocumentCount: () => ({
       execute: () => mongoCol.estimatedDocumentCount(),
@@ -305,13 +305,13 @@ function createCrudMethods<T extends Document>(mongoCol: MongoCollection<T>): Cr
 
     distinct: ((field: string, filterFn?: unknown) => ({
       execute: () =>
-        mongoCol.distinct(field, filterFn ? extractFilter(filterFn) : ({} as Filter<T>)),
+        mongoCol.distinct(field, filterFn ? extractFilter(filterFn) : ({})),
     })) as CrudCollection<T>["distinct"],
 
     bulkWrite: ((operations: readonly unknown[], options?: { ordered?: boolean }) => ({
       _operations: operations,
       execute: () =>
-        mongoCol.bulkWrite(operations as AnyBulkWriteOperation<T>[], options as BulkWriteOptions),
+        mongoCol.bulkWrite(operations as AnyBulkWriteOperation<T>[], options),
     })) as unknown as CrudCollection<T>["bulkWrite"],
   };
 }
@@ -344,7 +344,7 @@ export const collection = <TName extends string, TSchema extends SchemaLike>(
 
   const crud = createCrudMethods(mongoCol);
 
-  return Object.assign(col, {
+  const result = Object.assign(col, {
     aggregate: ((...stages: unknown[]) => {
       let agg = { collectionName: name, stages: [] };
       for (const s of stages) {
@@ -355,13 +355,18 @@ export const collection = <TName extends string, TSchema extends SchemaLike>(
       const bindPipeline = (pipeline: typeof agg): object => ({
         ...pipeline,
         pipe: (stage: (input: typeof agg) => typeof agg) => bindPipeline(stage(pipeline)),
-        toList: () => mongoCol.aggregate(pipeline.stages as Document[]).toArray(),
+        // eslint-disable-next-line custom/aggregate-must-tolist
+        toList: () => mongoCol.aggregate(pipeline.stages).toArray(),
         toMQL: () => JSON.stringify(pipeline.stages, null, 2),
       });
       return bindPipeline(agg);
     }) as unknown as AggregateBuilder<SimplifyWritable<InferSchema<TSchema>>>,
     ...crud,
   });
+
+  Object.defineProperty(result, "rawCollection", { value: mongoCol, enumerable: false });
+
+  return result as BoundCollection<TName, InferSchema<TSchema>>;
 };
 
 // ==========================================
@@ -391,13 +396,20 @@ export const registry =
   <const TMap extends Dict<SchemaLike>, const TVersion extends MongoVersions[number]>(
     version: TVersion, // For later on when we have to deal with version-specific features
     schemas: { [K in keyof TMap]: TMap[K] },
+    options?: { prefix?: string; resolveCollectionName?: (key: string) => string },
   ) =>
   (client: Db): { [K in keyof TMap]: BoundCollection<K & string, InferSchema<TMap[K]>> } => {
+    const resolve =
+      options?.resolveCollectionName ?? ((key: string) => `${options?.prefix ?? ""}${key}`);
     const bind = <TName extends string, TSchema extends SchemaLike>(
       name: TName,
       schema: TSchema,
     ): BoundCollection<TName, InferSchema<TSchema>> =>
-      collection(name, schema, client.collection<SimplifyWritable<InferSchema<TSchema>>>(name));
+      collection(
+        name,
+        schema,
+        client.collection<SimplifyWritable<InferSchema<TSchema>>>(resolve(name)),
+      );
 
     return Object.fromEntries(
       Object.entries(schemas).map(([name, schema]) => [name, bind(name, schema)]),

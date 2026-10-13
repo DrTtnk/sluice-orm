@@ -74,6 +74,35 @@ col.aggregate($match(() => ({ age: { $in: [1, 2, 3] } })));
 col.aggregate($match(() => ({ name: { $regex: /test/i } })));
 
 // =============================================
+// Match: $elemMatch on non-array paths rejected
+// =============================================
+
+col.aggregate(
+  // @ts-expect-error $elemMatch only valid on array fields
+  $match(() => ({ name: { $elemMatch: { $eq: "test" } } })),
+);
+
+col.aggregate(
+  // @ts-expect-error $elemMatch only valid on array fields
+  $match(() => ({ age: { $elemMatch: { $gt: 18 } } })),
+);
+
+col.aggregate(
+  // @ts-expect-error $elemMatch only valid on array fields
+  $match(() => ({ active: { $elemMatch: { $eq: true } } })),
+);
+
+col.aggregate(
+  // @ts-expect-error $elemMatch only valid on array fields
+  $match(() => ({ createdAt: { $elemMatch: { $gte: new Date() } } })),
+);
+
+col.aggregate(
+  // @ts-expect-error $elemMatch only valid on array fields
+  $match(() => ({ profile: { $elemMatch: { bio: { $eq: "test" } } } })),
+);
+
+// =============================================
 // Sort: non-comparable paths rejected
 // =============================================
 

@@ -308,6 +308,10 @@ export class Ret<out Context = unknown, T = unknown> {
 
 type AnyRet = Ret<never, never>;
 
+type ElemMatchFn = <const E>(filter: ($: ExprBuilder<E>) => ValidMatchFilterWithBuilder<E>) => {
+  $elemMatch: ValidMatchFilterWithBuilder<E>;
+};
+
 export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
   // Helper to resolve nested callbacks and values
   _resolve(value: unknown): unknown {
@@ -360,9 +364,7 @@ export class BaseBuilder<C, Mode extends BuilderMode = "expression"> {
     })) as unknown as PipelineBuilder<C>;
 
   // Query helper for $match array element filters
-  elemMatch = <const E>(filter: ($: ExprBuilder<E>) => ValidMatchFilterWithBuilder<E>) => ({
-    $elemMatch: filter(new ExprBuilder<E>()),
-  });
+  elemMatch: ElemMatchFn = filter => ({ $elemMatch: filter(new ExprBuilder()) });
 
   // ==========================================
   // Arithmetic Operators
